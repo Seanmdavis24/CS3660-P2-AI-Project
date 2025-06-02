@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="CartoonizeMe - Transform your videos into artistic animations using AI-powered neural style transfer. Create cartoon, anime, and artistic styled videos instantly in your browser.">
+    <meta name="keywords"
+        content="video style transfer, AI video processing, cartoon video, anime video, artistic video effects">
+    <meta name="author" content="CartoonizeMe Team">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://cartoonizeme.app/">
+    <meta property="og:title" content="CartoonizeMe - AI Video Style Transfer">
+    <meta property="og:description"
+        content="Transform your videos into artistic animations using AI-powered neural style transfer">
+    <meta property="og:image" content="/assets/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://cartoonizeme.app/">
+    <meta property="twitter:title" content="CartoonizeMe - AI Video Style Transfer">
+    <meta property="twitter:description"
+        content="Transform your videos into artistic animations using AI-powered neural style transfer">
+    <meta property="twitter:image" content="/assets/twitter-image.png">
+
+    <!-- PWA Manifest (REQ-053, REQ-120) -->
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="CartoonizeMe">
+
+    <!-- Preconnect to external domains for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Fonts for better typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Title -->
+    <title>CartoonizeMe - AI Video Style Transfer</title>
+
+    <!-- Inline critical CSS for faster loading -->
+    <style>
+        /* Critical CSS for initial load performance */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background-color: #f9fafb;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        #root {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Loading spinner for initial app load */
+        .app-loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            color: #6b7280;
+            font-size: 0.875rem;
+            text-align: center;
+            max-width: 300px;
+        }
+
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Focus styles for keyboard navigation */
+        *:focus {
+            outline: 2px solid #6366f1;
+            outline-offset: 2px;
+        }
+
+        /* Reduced motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Skip to main content link for screen readers (REQ-029) -->
+    <a href="#main-content"
+        class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-blue-600 text-white px-4 py-2 rounded">
+        Skip to main content
+    </a>
+
+    <!-- Main application root -->
+    <div id="root">
+        <!-- Loading state shown while React app loads -->
+        <div class="app-loading">
+            <div class="spinner" role="status" aria-label="Loading application"></div>
+            <div class="loading-text">
+                <strong>Loading CartoonizeMe...</strong><br>
+                Preparing AI models and video processing tools
+            </div>
+        </div>
+    </div>
+
+    <!-- No JavaScript fallback -->
+    <noscript>
+        <div style="text-align: center; padding: 2rem; background: #fef2f2; color: #dc2626; margin: 1rem;">
+            <h2>JavaScript Required</h2>
+            <p>CartoonizeMe requires JavaScript to function. Please enable JavaScript in your browser and refresh the
+                page.</p>
+            <p style="margin-top: 1rem; font-size: 0.875rem;">
+                This application uses advanced browser technologies including WebGL, Web Workers, and WebAssembly for
+                AI-powered video processing.
+            </p>
+        </div>
+    </noscript>
+
+    <!-- Register service worker for PWA functionality -->
+    <script>
+        // Service worker registration for PWA (REQ-053)
+        if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+
+        // Basic feature detection for unsupported browsers (REQ-084)
+        function checkBrowserSupport() {
+            const requiredFeatures = {
+                webgl: !!window.WebGLRenderingContext,
+                webWorkers: !!window.Worker,
+                fileAPI: !!(window.File && window.FileReader && window.FileList && window.Blob),
+                webAssembly: !!window.WebAssembly
+            };
+
+            const missingFeatures = Object.entries(requiredFeatures)
+                .filter(([name, supported]) => !supported)
+                .map(([name]) => name);
+
+            if (missingFeatures.length > 0) {
+                console.warn('Missing browser features:', missingFeatures);
+                // Application will show graceful degradation message
+            }
+        }
+
+        checkBrowserSupport();
+    </script>
+</body>
+
+</html>
