@@ -1,0 +1,106 @@
+{
+  "short_name": "Video Style Transfer",
+  "name": "Neural Video Style Transfer - AI-Powered Video Art",
+  "description": "Transform your videos into artistic masterpieces with AI-powered neural style transfer",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1e1b4b",
+  "background_color": "#1e1b4b",
+  "orientation": "any",
+  "scope": "/",
+  "categories": ["productivity", "multimedia", "entertainment"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "screenshots": [
+    {
+      "src": "screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Neural Video Style Transfer main interface"
+    },
+    {
+      "src": "screenshot-narrow.png", 
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Mobile video style transfer interface"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Video Processing",
+      "short_name": "Process Video",
+      "description": "Quickly start processing a new video",
+      "url": "/?action=process",
+      "icons": [
+        {
+          "src": "icon-process.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "View Gallery",
+      "short_name": "Gallery",
+      "description": "View processed videos",
+      "url": "/?action=gallery",
+      "icons": [
+        {
+          "src": "icon-gallery.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/share-target/",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "video",
+          "accept": ["video/mp4", "video/webm", "video/quicktime"]
+        }
+      ]
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "video/mp4": [".mp4"],
+        "video/webm": [".webm"],
+        "video/quicktime": [".mov"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+videostyle",
+      "url": "/?video=%s"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
