@@ -292,30 +292,35 @@ function App() {
             </main>
 
             {/* Footer */}
-            <footer className="bg-white border-t border-gray-200 py-6 mt-8">
-                <div className="container">
-                    <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
+            <footer className="glass border-t border-white/20 py-8 mt-12 relative overflow-hidden">
+                {/* Animated background */}
+                <div className="absolute inset-0 bg-gradient-ocean opacity-5"></div>
+
+                <div className="container relative z-10">
+                    <div className="flex flex-col md:flex-row justify-between items-center text-sm text-white/80">
                         <div className="mb-4 md:mb-0">
-                            <p>© 2024 CartoonizeMe. Transform your videos with AI-powered style transfer.</p>
+                            <p className="font-medium">© 2024 CartoonizeMe. Transform your videos with AI-powered style transfer.</p>
                         </div>
                         <div className="flex space-x-6">
-                            <a href="#" className="hover:text-primary-600 transition-colors">
+                            <a href="#" className="hover:text-white transition-colors hover:text-gradient-primary">
                                 Privacy Policy
                             </a>
-                            <a href="#" className="hover:text-primary-600 transition-colors">
+                            <a href="#" className="hover:text-white transition-colors hover:text-gradient-secondary">
                                 Terms of Service
                             </a>
-                            <a href="#" className="hover:text-primary-600 transition-colors">
+                            <a href="#" className="hover:text-white transition-colors hover:text-gradient-sunset">
                                 Help & Support
                             </a>
                         </div>
                     </div>
 
                     {/* Technical info for transparency */}
-                    <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500 text-center">
-                        <p>
-                            🔒 All processing happens in your browser. Videos never leave your device.
-                            Powered by TensorFlow.js and ffmpeg.wasm.
+                    <div className="mt-6 pt-6 border-t border-white/10 text-xs text-white/60 text-center">
+                        <p className="flex items-center justify-center gap-2">
+                            <span>🔒</span>
+                            All processing happens in your browser. Videos never leave your device.
+                            <span className="hidden md:inline">Powered by TensorFlow.js and ffmpeg.wasm.</span>
+                            <span>✨</span>
                         </p>
                     </div>
                 </div>
