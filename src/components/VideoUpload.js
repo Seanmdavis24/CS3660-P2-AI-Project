@@ -105,13 +105,13 @@ function VideoUpload() {
             <div className="max-w-2xl mx-auto">
                 <div
                     className={`
-            relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-200
-            ${isDragging
+                        relative border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-200
+                        ${isDragging
                             ? 'border-primary-500 bg-primary-50'
                             : 'border-gray-300 hover:border-gray-400'
                         }
-            ${isUploading ? 'pointer-events-none opacity-75' : 'cursor-pointer'}
-          `}
+                        ${isUploading ? 'pointer-events-none opacity-75' : 'cursor-pointer'}
+                    `}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
@@ -149,25 +149,6 @@ function VideoUpload() {
                             </div>
                         </div>
                     </div>
-
-                    {/* Upload Button */}
-                    <button
-                        className="btn btn-primary btn-lg"
-                        disabled={isUploading}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            document.getElementById('file-input').click();
-                        }}
-                    >
-                        {isUploading ? (
-                            <>
-                                <div className="loading-spinner-sm"></div>
-                                Processing...
-                            </>
-                        ) : (
-                            'Choose Video File'
-                        )}
-                    </button>
 
                     {/* Hidden File Input */}
                     <input
@@ -220,4 +201,4 @@ function VideoUpload() {
     );
 }
 
-export default VideoUpload; 
+export default VideoUpload;
