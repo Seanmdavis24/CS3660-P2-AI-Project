@@ -28,6 +28,12 @@ module.exports = (env, argv) => {
                 '@styles': path.resolve(__dirname, 'src/styles'),
                 '@workers': path.resolve(__dirname, 'src/workers'),
             },
+            // Fix for FFmpeg dynamic imports
+            fallback: {
+                "fs": false,
+                "path": false,
+                "crypto": false,
+            }
         },
 
         // Module rules for different file types
@@ -64,6 +70,11 @@ module.exports = (env, argv) => {
                 {
                     test: /\.worker\.js$/,
                     use: { loader: 'worker-loader' },
+                },
+                // WebAssembly files for FFmpeg
+                {
+                    test: /\.wasm$/,
+                    type: 'asset/resource',
                 },
             ],
         },
@@ -152,18 +163,21 @@ module.exports = (env, argv) => {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
                 'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
-                // Content Security Policy headers (REQ-092) - Updated for better Web Worker support
+                // SharedArrayBuffer support for FFmpeg (required for multi-threading)
+                'Cross-Origin-Embedder-Policy': 'require-corp',
+                'Cross-Origin-Opener-Policy': 'same-origin',
+                // Content Security Policy headers (REQ-092) - Updated for better Web Worker and FFmpeg support
                 'Content-Security-Policy': isProduction ?
-                    "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob: data:; connect-src 'self' https:; img-src 'self' data: blob:;" :
-                    "default-src 'self' 'unsafe-eval' 'unsafe-inline'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; worker-src 'self' blob: data:; connect-src 'self' ws: wss: http: https:; img-src 'self' data: blob:;"
+                    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: data:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob: data: 'unsafe-inline'; connect-src 'self' https: https://unpkg.com; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; object-src 'none';" :
+                    "default-src 'self' 'unsafe-eval' 'unsafe-inline'; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: data:; worker-src 'self' blob: data: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws: wss: http: https: https://unpkg.com; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; object-src 'none';"
             },
         },
 
         // Performance hints
         performance: {
             hints: isProduction ? 'warning' : false,
-            maxEntrypointSize: 512000, // 500KB
-            maxAssetSize: 512000, // 500KB
+            maxEntrypointSize: 1024000, // 1MB (increased for FFmpeg)
+            maxAssetSize: 1024000, // 1MB
         },
 
         // Source maps for debugging
@@ -178,6 +192,20 @@ module.exports = (env, argv) => {
         experiments: {
             // Enable WebAssembly support for ffmpeg.wasm
             asyncWebAssembly: true,
+            // Enable top-level await for FFmpeg initialization
+            topLevelAwait: true,
         },
+
+        // Ignore specific warnings and handle dynamic imports
+        ignoreWarnings: [
+            // Ignore FFmpeg dynamic import warnings
+            {
+                module: /@ffmpeg\/ffmpeg/,
+                message: /Critical dependency: the request of a dependency is an expression/,
+            },
+        ],
+
+        // Node.js polyfills (not needed for browser)
+        node: false,
     };
 }; 
