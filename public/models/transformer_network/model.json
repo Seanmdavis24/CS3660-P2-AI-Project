@@ -1,0 +1,13 @@
+{
+  "format": "graph-model",
+  "generatedBy": "TensorFlow.js tfjs-converter v3.21.0",
+  "convertedBy": "TensorFlow.js tfjs-converter v3.21.0",
+  "signature": {},
+  "userDefinedMetadata": {
+    "note": "This model will be loaded from TensorFlow Hub at runtime"
+  },
+  "modelTopology": {
+    "note": "Placeholder - actual model loaded from tfhub.dev"
+  },
+  "weightsManifest": []
+}
