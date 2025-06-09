@@ -14,13 +14,14 @@
         "download-models": "node scripts/download-models.js"
     },
     "dependencies": {
-        "@tensorflow/tfjs": "^4.10.0",
-        "@tensorflow/tfjs-backend-webgl": "^4.10.0",
         "@ffmpeg/ffmpeg": "^0.12.10",
         "@ffmpeg/util": "^0.12.1",
+        "@tensorflow/tfjs": "^4.10.0",
+        "@tensorflow/tfjs-backend-webgl": "^4.10.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
-        "react-router-dom": "^6.15.0"
+        "react-router-dom": "^6.15.0",
+        "yauzl": "^3.2.0"
     },
     "devDependencies": {
         "@babel/core": "^7.22.0",
