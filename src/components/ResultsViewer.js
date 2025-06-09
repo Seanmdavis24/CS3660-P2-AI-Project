@@ -152,6 +152,21 @@ function ResultsViewer() {
         };
     }, [currentVideo, result]);
 
+    // Debug Focus View functionality
+    React.useEffect(() => {
+        if (!showComparison) {
+            console.log('🎯 Focus View Debug:', {
+                showComparison,
+                processedUrl: videoUrls.processed,
+                originalUrl: videoUrls.original,
+                urlsAreEqual: videoUrls.processed === videoUrls.original,
+                resultBlob: result?.blob,
+                resultUrl: result?.url,
+                processedVideoExists: !!processedVideoRef.current
+            });
+        }
+    }, [showComparison, videoUrls.processed, videoUrls.original]);
+
     if (!result) {
         return (
             <div className="card text-center">
@@ -333,6 +348,16 @@ function ResultsViewer() {
                 ) : (
                     // Video player
                     <div className="relative rounded-xl overflow-hidden bg-black aspect-video group-hover:shadow-2xl transition-all duration-500">
+                        {/* Video Type Indicator */}
+                        <div className="absolute top-3 left-3 z-10">
+                            <div className={`px-3 py-1 rounded-full text-xs font-bold ${isProcessed
+                                ? 'bg-gradient-secondary text-white'
+                                : 'bg-gradient-primary text-white'
+                                }`}>
+                                {isProcessed ? '🎨 AI-STYLIZED' : '📹 ORIGINAL'}
+                            </div>
+                        </div>
+
                         <video
                             ref={videoRef}
                             className="w-full h-full object-cover"
@@ -341,12 +366,22 @@ function ResultsViewer() {
                             muted
                             playsInline
                             preload="metadata"
+                            src={videoUrl}
                             onPlay={() => setIsPlaying(prev => ({ ...prev, [videoType]: true }))}
                             onPause={() => setIsPlaying(prev => ({ ...prev, [videoType]: false }))}
                             onError={(e) => handleVideoError(videoType, e)}
                             onLoadedData={() => handleVideoLoad(videoType)}
                             onCanPlay={() => handleVideoCanPlay(videoType)}
-                            onLoadStart={() => console.log(`🔄 ${videoType} video started loading`)}
+                            onLoadStart={() => {
+                                console.log(`🔄 ${videoType} video started loading from URL: ${videoUrl}`);
+                                console.log(`🔍 Video ${videoType} source verification:`, {
+                                    videoType,
+                                    videoUrl,
+                                    isProcessed,
+                                    currentVideoSize: currentVideo?.size,
+                                    resultBlobSize: result?.blob?.size
+                                });
+                            }}
                             onLoadedMetadata={() => {
                                 console.log(`📊 ${videoType} video metadata loaded`);
                                 const video = videoRef.current;
@@ -354,16 +389,13 @@ function ResultsViewer() {
                                     console.log(`- Duration: ${video.duration}s`);
                                     console.log(`- Video dimensions: ${video.videoWidth}x${video.videoHeight}`);
                                     console.log(`- Ready state: ${video.readyState}`);
+                                    console.log(`- Current src: ${video.currentSrc}`);
                                 }
                             }}
                             onCanPlayThrough={() => {
                                 console.log(`✅ ${videoType} video can play through`);
                             }}
                         >
-                            <source
-                                src={videoUrl}
-                                type={isProcessed ? getProcessedVideoType() : currentVideo.type}
-                            />
                             Your browser does not support the video tag.
                         </video>
 
@@ -441,20 +473,24 @@ function ResultsViewer() {
 
             {/* Video Comparison Toggle */}
             <div className="flex justify-center">
-                <div className="glass rounded-full p-2">
+                <div className="glass rounded-2xl p-6 flex gap-4">
                     <button
-                        className={`px-6 py-3 rounded-full transition-all duration-300 ${showComparison ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white'
+                        className={`px-16 py-4 rounded-xl font-medium text-base transition-all duration-300 w-48 ${showComparison
+                            ? 'bg-gradient-primary text-white shadow-lg transform scale-105'
+                            : 'text-white/70 hover:text-white hover:bg-white/10'
                             }`}
                         onClick={() => setShowComparison(true)}
                     >
-                        📊 Compare Videos
+                        Compare Videos
                     </button>
                     <button
-                        className={`px-6 py-3 rounded-full transition-all duration-300 ${!showComparison ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white'
+                        className={`px-16 py-4 rounded-xl font-medium text-base transition-all duration-300 w-48 ${!showComparison
+                            ? 'bg-gradient-secondary text-white shadow-lg transform scale-105'
+                            : 'text-white/70 hover:text-white hover:bg-white/10'
                             }`}
                         onClick={() => setShowComparison(false)}
                     >
-                        🎬 Focus View
+                        Focus View
                     </button>
                 </div>
             </div>
@@ -468,7 +504,14 @@ function ResultsViewer() {
             ) : (
                 /* Focus View - Only Processed Video */
                 <div className="max-w-4xl mx-auto">
-                    {renderVideoPlayer('processed', processedVideoRef, videoUrls.processed, selectedStyle.icon + ' ' + selectedStyle.name, result.blob.size, true)}
+                    <div className="mb-4 text-center">
+                        <div className="inline-flex items-center glass rounded-full px-4 py-2">
+                            <span className="text-sm text-white/80 mr-2">🎯 Focus View:</span>
+                            <span className="text-sm font-medium text-white">AI-Stylized Video Only</span>
+                        </div>
+                    </div>
+
+                    {renderVideoPlayer('processed', processedVideoRef, videoUrls.processed, '🎨 ' + selectedStyle.name + ' Style', result.blob.size, true)}
                 </div>
             )}
 

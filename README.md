@@ -42,10 +42,12 @@ CartoonizeMe is a cutting-edge web application that applies AI-powered neural st
    cd cartoonizeme
    ```
 
-2. **Install dependencies**
+2. **Install dependencies and download AI models**
    ```bash
-   npm install
+   npm install  # This automatically downloads TensorFlow.js models (~60MB)
    ```
+   
+   > 📝 **Note**: The first installation downloads AI models from official TensorFlow.js sources. This may take a few minutes depending on your internet connection.
 
 3. **Start development server**
    ```bash
@@ -54,6 +56,17 @@ CartoonizeMe is a cutting-edge web application that applies AI-powered neural st
 
 4. **Open in browser**
    Navigate to `http://localhost:3000`
+
+### Model Management
+
+The application uses TensorFlow.js models for neural style transfer that are **automatically downloaded during installation**.
+
+- **Automatic Setup**: `npm install` downloads models via postinstall hook
+- **Manual Download**: `npm run download-models` to force re-download
+- **Fallback System**: If models fail to download, the app uses TensorFlow Hub at runtime
+- **Storage**: Models are stored in `public/models/` (excluded from git)
+
+For detailed model information, see [MODELS_README.md](./MODELS_README.md).
 
 ### Building for Production
 

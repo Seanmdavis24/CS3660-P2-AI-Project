@@ -1,5 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { InjectManifest } = require('workbox-webpack-plugin');
+// const { InjectManifest } = require('workbox-webpack-plugin'); // Disabled PWA functionality
 const path = require('path');
 
 module.exports = (env, argv) => {
@@ -139,14 +139,14 @@ module.exports = (env, argv) => {
                 } : false,
             }),
 
-            // Progressive Web App support (REQ-053)
-            ...(isProduction ? [
-                new InjectManifest({
-                    swSrc: './src/sw.js',
-                    swDest: 'sw.js',
-                    maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB for TensorFlow models
-                }),
-            ] : []),
+            // Progressive Web App support - Disabled to prevent service worker 404 errors
+            // ...(isProduction ? [
+            //     new InjectManifest({
+            //         swSrc: './src/sw.js',
+            //         swDest: 'sw.js',
+            //         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB for TensorFlow models
+            //     }),
+            // ] : []),
         ],
 
         // Development server configuration
@@ -166,10 +166,21 @@ module.exports = (env, argv) => {
                 // SharedArrayBuffer support for FFmpeg (required for multi-threading)
                 'Cross-Origin-Embedder-Policy': 'require-corp',
                 'Cross-Origin-Opener-Policy': 'same-origin',
-                // Content Security Policy headers (REQ-092) - Updated for better Web Worker and FFmpeg support
-                'Content-Security-Policy': isProduction ?
-                    "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: data:; style-src 'self' 'unsafe-inline'; worker-src 'self' blob: data: 'unsafe-inline'; connect-src 'self' https: https://unpkg.com; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; object-src 'none';" :
-                    "default-src 'self' 'unsafe-eval' 'unsafe-inline'; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: data:; worker-src 'self' blob: data: 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws: wss: http: https: https://unpkg.com; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; object-src 'none';"
+                // More permissive CSP for development to prevent TensorFlow.js issues
+                'Content-Security-Policy': isProduction ? [
+                    "default-src 'self'",
+                    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://tfhub.dev https://storage.googleapis.com",
+                    "worker-src 'self' blob: https://unpkg.com",
+                    "connect-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://tfhub.dev https://storage.googleapis.com data: blob:",
+                    "img-src 'self' data: blob:",
+                    "media-src 'self' blob:",
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                    "font-src 'self' data: https://fonts.gstatic.com",
+                    "object-src 'none'",
+                    "base-uri 'self'"
+                ].join('; ') :
+                    // Very permissive CSP for development to avoid issues
+                    "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: data: https:; worker-src 'self' blob: data: https:; connect-src 'self' ws: wss: http: https: blob: data:; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data: https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; object-src 'none';"
             },
         },
 

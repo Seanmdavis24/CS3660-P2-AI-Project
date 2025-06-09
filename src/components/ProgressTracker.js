@@ -16,7 +16,9 @@ function ProgressTracker() {
         currentFrame = 0,
         totalFrames = 0,
         timeRemaining = null,
-        stage = null
+        stage = null,
+        estimatedTimeRemaining = null,
+        averageFrameTime = null
     } = processingState;
 
     const getProgressColor = () => {
@@ -118,17 +120,44 @@ function ProgressTracker() {
             )}
 
             {/* Time Remaining */}
-            {timeRemaining !== null && timeRemaining > 0 && (
+            {(timeRemaining !== null && timeRemaining > 0) || (estimatedTimeRemaining !== null && estimatedTimeRemaining > 0) && (
                 <div className="mb-6">
                     <div className="text-sm font-medium text-gray-700 mb-2">Estimated Time Remaining</div>
                     <div className="flex items-center space-x-2">
                         <div className="text-lg font-bold text-orange-600">
-                            {Math.floor(timeRemaining / 60)}m {timeRemaining % 60}s
+                            {estimatedTimeRemaining ?
+                                `${Math.floor(estimatedTimeRemaining / 60)}m ${estimatedTimeRemaining % 60}s` :
+                                `${Math.floor(timeRemaining / 60)}m ${timeRemaining % 60}s`
+                            }
                         </div>
                         <div className="text-xs text-gray-500">
                             (approximate)
                         </div>
                     </div>
+
+                    {/* Performance Metrics */}
+                    {averageFrameTime && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="text-xs font-medium text-gray-700 mb-2">Performance Metrics</div>
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Avg. Frame Time:</span>
+                                    <span className="font-medium">{averageFrameTime.toFixed(2)}s</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Processing Rate:</span>
+                                    <span className="font-medium">{(1 / averageFrameTime).toFixed(2)} fps</span>
+                                </div>
+                            </div>
+
+                            {/* Performance Tips */}
+                            {averageFrameTime > 10 && (
+                                <div className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                                    💡 Tip: Consider reducing video resolution for faster processing
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
 

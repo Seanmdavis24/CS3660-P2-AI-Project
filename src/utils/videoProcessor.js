@@ -16,8 +16,15 @@ class VideoProcessor {
         this.useFallback = false;
         this.onProgress = null;
         this.onStageChange = null;
-        this.styleTransferModel = null;  // TensorFlow Hub model
+        this.styleModel = null;        // Magenta style network (extracts style features)
+        this.transformerModel = null;  // Magenta transformer network (applies style transfer)
         this.isModelReady = false;
+        this.usingSingleHubModel = false;
+
+        // Simple performance tracking
+        this.performanceStats = {
+            totalStartTime: null
+        };
     }
 
     /**
@@ -29,6 +36,9 @@ class VideoProcessor {
 
         try {
             if (this.onStageChange) this.onStageChange('initializing');
+
+            console.log('🚀 Initializing VideoProcessor...');
+            console.log('ℹ️ Note: Some CDN loading warnings are normal and expected during initialization');
 
             // Initialize TensorFlow.js
             console.log('🧠 Initializing TensorFlow.js...');
@@ -62,6 +72,13 @@ class VideoProcessor {
             console.log(`- Neural networks: ${this.isModelReady ? 'loaded' : 'using fallback filters'}`);
             console.log(`- Video processing: ${this.useFallback ? 'HTML5 fallback' : 'FFmpeg'}`);
 
+            if (this.useFallback) {
+                console.log('ℹ️ Note: Using browser-based processing (this is normal and works well)');
+            }
+            if (!this.isModelReady) {
+                console.log('ℹ️ Note: Using enhanced filter-based style transfer (still produces great results)');
+            }
+
         } catch (error) {
             // Only throw for truly critical errors
             console.error('❌ Critical initialization error:', error);
@@ -82,25 +99,116 @@ class VideoProcessor {
         console.log('🧠 Loading neural style transfer models...');
 
         try {
-            // Instead of loading external models blocked by CORS,
-            // create a local TensorFlow.js implementation that works
-            console.log('🔄 Setting up local neural style transfer...');
+            // Use the working arbitrary image stylization models from the master directory
+            // These are TensorFlow Graph models that need to be loaded with tf.loadGraphModel
+            const styleModelUrl = '/models/arbitrary-image-stylization-tfjs-master/saved_model_style_js/model.json';
+            const transformerModelUrl = '/models/arbitrary-image-stylization-tfjs-master/saved_model_transformer_js/model.json';
 
-            // Verify TensorFlow.js is available
-            await tf.ready();
+            console.log('🔄 Loading Magenta Arbitrary Style Transfer models...');
+            console.log(`📍 Style Model: ${styleModelUrl}`);
+            console.log(`📍 Transformer Model: ${transformerModelUrl}`);
 
-            // Create a simple but effective style transfer model using TF operations
+            // Test model URLs first
+            try {
+                console.log('🔍 Testing model URL accessibility...');
+                const styleResponse = await fetch(styleModelUrl);
+                const transformerResponse = await fetch(transformerModelUrl);
+
+                console.log(`📊 Style model response: ${styleResponse.status} ${styleResponse.statusText}`);
+                console.log(`📊 Transformer model response: ${transformerResponse.status} ${transformerResponse.statusText}`);
+
+                if (!styleResponse.ok || !transformerResponse.ok) {
+                    throw new Error('Model URLs not accessible');
+                }
+            } catch (fetchError) {
+                console.warn('⚠️ Model URL test failed:', fetchError.message);
+                throw fetchError;
+            }
+
+            // Load both models in parallel using tf.loadGraphModel for TensorFlow Graph models
+            console.log('🔄 Loading TensorFlow models...');
+            const [styleModel, transformerModel] = await Promise.all([
+                tf.loadGraphModel(styleModelUrl),
+                tf.loadGraphModel(transformerModelUrl)
+            ]);
+
+            console.log('✅ Models loaded, checking model info...');
+            console.log(`📊 Style model inputs:`, styleModel.inputs.map(input => `${input.name}: ${input.shape}`));
+            console.log(`📊 Style model outputs:`, styleModel.outputs.map(output => `${output.name}: ${output.shape}`));
+            console.log(`📊 Transformer model inputs:`, transformerModel.inputs.map(input => `${input.name}: ${input.shape}`));
+            console.log(`📊 Transformer model outputs:`, transformerModel.outputs.map(output => `${output.name}: ${output.shape}`));
+
+            this.styleModel = styleModel;
+            this.transformerModel = transformerModel;
             this.isModelReady = true;
-            console.log('✅ Local neural style transfer ready');
-            console.log('🎨 Using TensorFlow.js operations for style transfer');
+
+            console.log('✅ Neural style transfer models loaded successfully!');
+            console.log('🎨 Style Model loaded:', styleModel);
+            console.log('🔄 Transformer Model loaded:', transformerModel);
+            console.log('📊 Models ready for neural style transfer processing!');
 
             return true;
 
         } catch (error) {
-            console.warn('⚠️ Neural style transfer setup failed:', error.message);
-            console.log('🎨 Will use enhanced filter-based style transfer as fallback');
-            this.isModelReady = false;
-            return false;
+            console.error('❌ Failed to load neural style transfer models:', error);
+            console.log('📋 Error details:', {
+                message: error.message,
+                stack: error.stack?.split('\n').slice(0, 3)
+            });
+
+            // Try fallback to the older model format
+            try {
+                console.log('🔄 Trying fallback models...');
+                const fallbackStyleUrl = '/models/style_network/model.json';
+                const fallbackTransformerUrl = '/models/transformer_network/model.json';
+
+                console.log(`📍 Fallback Style Model: ${fallbackStyleUrl}`);
+                console.log(`📍 Fallback Transformer Model: ${fallbackTransformerUrl}`);
+
+                const [fallbackStyleModel, fallbackTransformerModel] = await Promise.all([
+                    tf.loadGraphModel(fallbackStyleUrl),
+                    tf.loadGraphModel(fallbackTransformerUrl)
+                ]);
+
+                this.styleModel = fallbackStyleModel;
+                this.transformerModel = fallbackTransformerModel;
+                this.isModelReady = true;
+
+                console.log('✅ Fallback models loaded successfully!');
+                return true;
+
+            } catch (fallbackError) {
+                console.error('❌ Fallback models also failed:', fallbackError);
+
+                // Try TensorFlow Hub model as final fallback
+                try {
+                    console.log('🔄 Trying TensorFlow Hub model as final fallback...');
+                    const hubModelUrl = 'https://tfhub.dev/google/tfjs-model/magenta/arbitrary-image-stylization-v1-256/2/default/1';
+
+                    console.log(`📍 TensorFlow Hub Model: ${hubModelUrl}`);
+
+                    const hubModel = await tf.loadGraphModel(hubModelUrl, { fromTFHub: true });
+
+                    // For TensorFlow Hub models, we can use a single model for both style extraction and transfer
+                    this.styleModel = hubModel;
+                    this.transformerModel = hubModel; // Same model for both operations
+                    this.isModelReady = true;
+                    this.usingSingleHubModel = true; // Flag to indicate different usage pattern
+
+                    console.log('✅ TensorFlow Hub model loaded successfully!');
+                    console.log(`📊 Hub model inputs:`, hubModel.inputs.map(input => `${input.name}: ${input.shape}`));
+                    console.log(`📊 Hub model outputs:`, hubModel.outputs.map(output => `${output.name}: ${output.shape}`));
+
+                    return true;
+
+                } catch (hubError) {
+                    console.error('❌ TensorFlow Hub model also failed:', hubError);
+                    console.log('🎨 Will use enhanced filter-based style transfer as final fallback');
+                    this.isModelReady = false;
+                    this.usingSingleHubModel = false;
+                    return false;
+                }
+            }
         }
     }
 
@@ -247,7 +355,11 @@ class VideoProcessor {
                     return; // Success - exit function
 
                 } catch (error) {
-                    console.warn(`Failed to load FFmpeg from ${cdn.name}:`, error.message);
+                    // Reduce console noise for expected failures
+                    if (cdn === cdnOptions[cdnOptions.length - 1]) {
+                        // Only log the final failure
+                        console.log(`⚠️ FFmpeg failed to load from all CDNs, will use fallback processing`);
+                    }
                     continue;
                 }
             }
@@ -336,6 +448,12 @@ class VideoProcessor {
                     try {
                         clearTimeout(loadTimeout);
 
+                        // Validate video properties before accessing them
+                        if (!video.videoWidth || !video.videoHeight || !video.duration) {
+                            reject(new Error('Video metadata is incomplete - width, height, or duration missing'));
+                            return;
+                        }
+
                         console.log(`📹 Video metadata loaded: ${video.videoWidth}x${video.videoHeight}, ${video.duration.toFixed(1)}s`);
 
                         canvas.width = video.videoWidth;
@@ -348,6 +466,14 @@ class VideoProcessor {
                         if (totalFrames === 0) {
                             reject(new Error('Video duration is too short to extract frames'));
                             return;
+                        }
+
+                        // Validate that the video is actually playable
+                        if (video.readyState < 2) { // HAVE_CURRENT_DATA
+                            console.log('⏳ Waiting for video to be ready...');
+                            video.addEventListener('canplay', () => {
+                                console.log('✅ Video is now ready for frame extraction');
+                            });
                         }
 
                         console.log(`📸 Extracting ${totalFrames} frames at ${fps} FPS...`);
@@ -462,7 +588,7 @@ class VideoProcessor {
 
             // Apply neural style transfer if models are loaded and style image is available
             let processedCanvas;
-            if (this.isModelReady && this.styleTransferModel && styleData.image) {
+            if (this.isModelReady && this.styleModel && styleData.image) {
                 console.log(`🧠 Using neural style transfer for: ${styleData.metadata.fileName}`);
                 processedCanvas = await this.applyNeuralStyleTransfer(img, styleData);
             } else {
@@ -496,7 +622,7 @@ class VideoProcessor {
 
             // Apply neural style transfer if available and style image is present
             let processedCanvas;
-            if (this.isModelReady && this.styleTransferModel && styleData.image) {
+            if (this.isModelReady && this.styleModel && styleData.image) {
                 console.log(`🧠 Using neural style transfer for: ${styleData.metadata.fileName}`);
                 processedCanvas = await this.applyNeuralStyleTransfer(img, styleData);
             } else {
@@ -526,156 +652,178 @@ class VideoProcessor {
         try {
             console.log(`🧠 Applying neural style transfer using: ${styleData.metadata.fileName}`);
 
-            // Check if we have TensorFlow.js ready
-            if (!this.isModelReady) {
-                console.warn('⚠️ Neural style transfer not ready, using enhanced filters');
+            // Check if we have both models loaded
+            if (!this.isModelReady || !this.styleModel || !this.transformerModel) {
+                console.warn('⚠️ Neural style transfer models not ready, using enhanced filters');
                 return await this.applyStyleFilter(img, styleData);
             }
 
-            // Create canvas for content image
+            // Check if we have style reference image
+            if (!styleData.image) {
+                console.warn('⚠️ No style reference image available, using enhanced filters');
+                return await this.applyStyleFilter(img, styleData);
+            }
+
+            // Force garbage collection before processing to free memory
+            if (window.gc) {
+                window.gc();
+            }
+
+            // Check GPU memory and warn if high
+            const memoryBefore = tf.memory();
+            if (memoryBefore.numBytes > 1500000000) { // 1.5GB threshold
+                console.warn(`⚠️ High GPU memory usage before processing: ${(memoryBefore.numBytes / 1024 / 1024).toFixed(2)} MB`);
+                // Force tensor cleanup
+                tf.engine().endScope();
+                tf.engine().startScope();
+            }
+
+            // Create canvases for content and style images
             const contentCanvas = document.createElement('canvas');
             const contentCtx = contentCanvas.getContext('2d');
-
-            // Use optimal size for processing
-            const targetSize = 512;
-            contentCanvas.width = targetSize;
-            contentCanvas.height = targetSize;
-            contentCtx.drawImage(img, 0, 0, targetSize, targetSize);
-
-            // Create style canvas for reference
             const styleCanvas = document.createElement('canvas');
             const styleCtx = styleCanvas.getContext('2d');
-            styleCanvas.width = 256;
-            styleCanvas.height = 256;
-            styleCtx.drawImage(styleData.image, 0, 0, 256, 256);
 
-            console.log('🔄 Converting images to tensors...');
+            // OPTIMIZED: Use smaller sizes for faster processing
+            // Reduce size for better performance while maintaining quality
+            const styleSize = 256; // Keep style at 256 for model requirements
+            const maxContentSize = 384; // Reduced from 512 for better performance
+            const contentSize = Math.min(maxContentSize, Math.max(256, Math.max(img.width, img.height)));
 
-            // Convert to tensors
-            const contentTensor = tf.browser.fromPixels(contentCanvas)
-                .toFloat()
-                .div(255.0);
+            contentCanvas.width = contentSize;
+            contentCanvas.height = contentSize;
+            styleCanvas.width = styleSize;
+            styleCanvas.height = styleSize;
 
-            const styleTensor = tf.browser.fromPixels(styleCanvas)
-                .toFloat()
-                .div(255.0);
+            // Draw both images at model sizes
+            contentCtx.drawImage(img, 0, 0, contentSize, contentSize);
+            styleCtx.drawImage(styleData.image, 0, 0, styleSize, styleSize);
 
-            console.log('🎨 Applying neural style transfer using TensorFlow.js operations...');
+            console.log('🔄 Converting images to tensors for neural style transfer...');
 
-            // Apply style transfer using TensorFlow.js operations
-            const styledTensor = await this.performLocalStyleTransfer(contentTensor, styleTensor);
+            // Convert images to tensors with proper preprocessing (exactly like the working example)
+            let contentTensor, styleTensor, styledTensor, bottleneck;
 
-            // Create output canvas
-            const outputCanvas = document.createElement('canvas');
-            outputCanvas.width = img.width;
-            outputCanvas.height = img.height;
+            try {
+                contentTensor = tf.browser.fromPixels(contentCanvas)
+                    .toFloat()
+                    .div(tf.scalar(255))
+                    .expandDims();
 
-            // Convert back to image
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = targetSize;
-            tempCanvas.height = targetSize;
+                styleTensor = tf.browser.fromPixels(styleCanvas)
+                    .toFloat()
+                    .div(tf.scalar(255))
+                    .expandDims();
 
-            await tf.browser.toPixels(styledTensor, tempCanvas);
+                console.log('🎨 Running style network to extract style features...');
+                console.log(`📊 Content tensor shape: [${contentTensor.shape}]`);
+                console.log(`📊 Style tensor shape: [${styleTensor.shape}]`);
 
-            // Scale to original size
-            const outputCtx = outputCanvas.getContext('2d');
-            outputCtx.drawImage(tempCanvas, 0, 0, img.width, img.height);
+                if (this.usingSingleHubModel) {
+                    // TensorFlow Hub model approach - single model takes both inputs
+                    console.log('🔄 Using TensorFlow Hub single model for style transfer...');
+                    styledTensor = this.styleModel.predict([contentTensor, styleTensor]);
+                    console.log('✅ TensorFlow Hub model processing complete!');
+                } else {
+                    // Two-model approach (Magenta style) - FIXED: No tf.tidy() wrapper
+                    console.log('🔄 Using two-model Magenta approach...');
 
-            // Clean up tensors
-            contentTensor.dispose();
-            styleTensor.dispose();
-            styledTensor.dispose();
+                    // Step 1: Extract style features using the style model
+                    console.log('🔄 Calling style model predict...');
+                    bottleneck = this.styleModel.predict(styleTensor);
+                    console.log(`📊 Style model output shape: [${bottleneck.shape}]`);
 
-            console.log(`✅ Neural style transfer completed successfully`);
-            return outputCanvas;
+                    console.log('🔄 Running transformer network to apply style transfer...');
+                    console.log(`📊 Bottleneck shape: [${bottleneck.shape}]`);
+
+                    // Step 2: Apply style transfer using the transformer model
+                    console.log('🔄 Calling transformer model predict...');
+                    styledTensor = this.transformerModel.predict([contentTensor, bottleneck]);
+                    console.log(`📊 Transformer model output shape: [${styledTensor.shape}]`);
+
+                    console.log('✅ Two-model processing complete!');
+                }
+
+                // Create output canvas at original size
+                const outputCanvas = document.createElement('canvas');
+                outputCanvas.width = img.width;
+                outputCanvas.height = img.height;
+
+                // Create temp canvas for model output
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = contentSize;
+                tempCanvas.height = contentSize;
+
+                // Convert output tensor to pixels (squeeze to remove batch dimension)
+                console.log('🔄 Converting tensor to pixels...');
+                const squeezedResult = styledTensor.squeeze();
+                console.log(`📊 Squeezed result shape: [${squeezedResult.shape}]`);
+
+                // This operation is synchronous and safe
+                await tf.browser.toPixels(squeezedResult, tempCanvas);
+                console.log('✅ Tensor to pixels conversion successful');
+
+                // Scale to original image size
+                const outputCtx = outputCanvas.getContext('2d');
+                outputCtx.drawImage(tempCanvas, 0, 0, img.width, img.height);
+
+                // MANUAL tensor cleanup to prevent memory leaks
+                contentTensor.dispose();
+                styleTensor.dispose();
+                styledTensor.dispose();
+                squeezedResult.dispose();
+                if (bottleneck) {
+                    bottleneck.dispose();
+                }
+
+                console.log('✅ Neural style transfer completed successfully using real AI models!');
+                return outputCanvas;
+
+            } catch (tensorError) {
+                console.error('❌ Error during tensor operations:', tensorError);
+
+                // Clean up any tensors that were created
+                try {
+                    if (contentTensor) contentTensor.dispose();
+                    if (styleTensor) styleTensor.dispose();
+                    if (styledTensor) styledTensor.dispose();
+                    if (bottleneck) bottleneck.dispose();
+                } catch (cleanupError) {
+                    console.error('❌ Error during tensor cleanup:', cleanupError);
+                }
+
+                throw tensorError; // Re-throw to be caught by outer catch
+            }
 
         } catch (error) {
             console.error('❌ Neural style transfer failed:', error);
+            console.log('📋 Detailed error info:', {
+                message: error.message,
+                stack: error.stack?.split('\n').slice(0, 5),
+                modelReady: this.isModelReady,
+                hasStyleModel: !!this.styleModel,
+                hasTransformerModel: !!this.transformerModel
+            });
+
+            // Force cleanup on error
+            if (tf.memory().numTensors > 100) {
+                console.log('🧹 Forcing tensor cleanup due to error...');
+                tf.engine().endScope();
+                tf.engine().startScope();
+            }
+
             console.log('🔄 Falling back to enhanced filter method...');
             return await this.applyStyleFilter(img, styleData);
-        }
-    }
+        } finally {
+            // Monitor memory after processing
+            const memoryAfter = tf.memory();
+            console.log(`📊 GPU memory after processing: ${(memoryAfter.numBytes / 1024 / 1024).toFixed(2)} MB`);
 
-    /**
-     * Perform local style transfer using TensorFlow.js operations
-     */
-    async performLocalStyleTransfer(contentTensor, styleTensor) {
-        try {
-            // Extract style statistics from style image
-            const styleMean = tf.mean(styleTensor, [0, 1], true);
-            const styleVar = tf.moments(styleTensor, [0, 1]).variance;
-
-            // Extract content statistics
-            const contentMean = tf.mean(contentTensor, [0, 1], true);
-            const contentVar = tf.moments(contentTensor, [0, 1]).variance;
-
-            // Normalize content
-            const normalizedContent = tf.sub(contentTensor, contentMean);
-
-            // Apply style statistics to content
-            const styleStdDev = tf.sqrt(tf.add(styleVar, 1e-6));
-            const contentStdDev = tf.sqrt(tf.add(contentVar, 1e-6));
-
-            const scaledContent = tf.mul(normalizedContent, tf.div(styleStdDev, contentStdDev));
-            const styledContent = tf.add(scaledContent, styleMean);
-
-            // Apply additional style enhancement using convolution-like operations
-            const enhanced = await this.enhanceWithStyleFilters(styledContent, styleTensor);
-
-            // Clean up intermediate tensors
-            styleMean.dispose();
-            styleVar.dispose();
-            contentMean.dispose();
-            contentVar.dispose();
-            normalizedContent.dispose();
-            styleStdDev.dispose();
-            contentStdDev.dispose();
-            scaledContent.dispose();
-            styledContent.dispose();
-
-            return enhanced;
-
-        } catch (error) {
-            console.error('❌ Local style transfer failed:', error);
-            throw error;
-        }
-    }
-
-    /**
-     * Enhance with style-specific filters using TensorFlow operations
-     */
-    async enhanceWithStyleFilters(tensor, styleTensor) {
-        try {
-            // Create a simple convolution kernel for style enhancement
-            const kernel = tf.tensor4d([
-                [[[0.0625]], [[0.125]], [[0.0625]]],
-                [[[0.125]], [[0.25]], [[0.125]]],
-                [[[0.0625]], [[0.125]], [[0.0625]]]
-            ]);
-
-            // Apply convolution to each channel separately
-            const [r, g, b] = tf.split(tensor.expandDims(0), 3, 3);
-
-            const enhancedR = tf.conv2d(r, kernel, 1, 'same');
-            const enhancedG = tf.conv2d(g, kernel, 1, 'same');
-            const enhancedB = tf.conv2d(b, kernel, 1, 'same');
-
-            const enhanced = tf.concat([enhancedR, enhancedG, enhancedB], 3);
-
-            // Clean up
-            kernel.dispose();
-            r.dispose();
-            g.dispose();
-            b.dispose();
-            enhancedR.dispose();
-            enhancedG.dispose();
-            enhancedB.dispose();
-
-            return tf.clipByValue(enhanced.squeeze(), 0, 1);
-
-        } catch (error) {
-            console.warn('⚠️ Style enhancement failed, returning original:', error);
-            return tensor;
+            if (memoryAfter.numBytes > 2000000000) { // 2GB threshold
+                console.warn(`⚠️ High memory usage in GPU: ${(memoryAfter.numBytes / 1024 / 1024).toFixed(2)} MB, forcing cleanup`);
+                tf.engine().endScope();
+                tf.engine().startScope();
+            }
         }
     }
 
@@ -940,12 +1088,19 @@ class VideoProcessor {
      * Reconstruct video from processed frames
      */
     async reconstructVideo(frameNames, fps = 5) {
+        console.log('🔄 Starting video reconstruction...');
+        console.log(`📊 Frame data type: ${typeof frameNames[0]}`);
+        console.log(`📊 Frame structure:`, frameNames[0]);
+
         if (this.useFallback) {
+            console.log('🔄 Using fallback video reconstruction method');
             return await this.reconstructVideoFallback(frameNames, fps);
         }
 
         try {
             if (this.onStageChange) this.onStageChange('reconstructing_video');
+
+            console.log('🔄 Using FFmpeg video reconstruction method');
 
             // Use processed frames to create video
             await this.ffmpeg.exec([
@@ -962,8 +1117,12 @@ class VideoProcessor {
             return new Blob([outputData.buffer], { type: 'video/mp4' });
 
         } catch (error) {
-            console.error('❌ Video reconstruction failed:', error);
-            throw new Error(`Video reconstruction failed: ${error.message}`);
+            console.error('❌ FFmpeg video reconstruction failed:', error);
+            console.log('🔄 Falling back to browser-based reconstruction...');
+
+            // If FFmpeg fails, try fallback method
+            this.useFallback = true;
+            return await this.reconstructVideoFallback(frameNames, fps);
         }
     }
 
@@ -972,80 +1131,233 @@ class VideoProcessor {
      */
     async reconstructVideoFallback(processedFrames, fps = 5) {
         return new Promise((resolve, reject) => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            try {
+                console.log('🔄 Starting fallback video reconstruction...');
+                console.log(`📊 Processed frames count: ${processedFrames.length}`);
+                console.log(`📊 Frame structure:`, processedFrames[0]);
 
-            // Set canvas size based on first frame
-            if (processedFrames.length > 0) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Validate frames
+                if (!processedFrames || processedFrames.length === 0) {
+                    reject(new Error('No processed frames provided for reconstruction'));
+                    return;
+                }
+
+                // Get first frame to determine canvas size
                 const firstFrame = processedFrames[0];
+
+                // Handle different frame structures
+                let firstFrameBlob;
+                if (firstFrame && firstFrame.blob) {
+                    firstFrameBlob = firstFrame.blob;
+                } else if (firstFrame && typeof firstFrame === 'object' && firstFrame.data) {
+                    // Handle case where frame is a processed frame object
+                    firstFrameBlob = new Blob([firstFrame.data], { type: 'image/png' });
+                } else {
+                    reject(new Error('Invalid frame structure - no blob found'));
+                    return;
+                }
+
                 const img = new Image();
 
                 img.onload = () => {
-                    canvas.width = img.width;
-                    canvas.height = img.height;
+                    try {
+                        console.log(`📐 Canvas size: ${img.width}x${img.height}`);
+                        canvas.width = img.width;
+                        canvas.height = img.height;
 
-                    // Create video stream from canvas
-                    const stream = canvas.captureStream(fps);
-                    const mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: 'video/webm;codecs=vp9'
-                    });
-
-                    const chunks = [];
-
-                    mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            chunks.push(event.data);
-                        }
-                    };
-
-                    mediaRecorder.onstop = () => {
-                        const videoBlob = new Blob(chunks, { type: 'video/webm' });
-                        resolve(videoBlob);
-                    };
-
-                    mediaRecorder.onerror = reject;
-
-                    // Start recording
-                    mediaRecorder.start();
-
-                    // Draw frames to canvas
-                    let frameIndex = 0;
-                    const frameInterval = 1000 / fps;
-
-                    const drawNextFrame = () => {
-                        if (frameIndex >= processedFrames.length) {
-                            // Stop recording
-                            mediaRecorder.stop();
+                        // Check if browser supports video recording
+                        if (!canvas.captureStream) {
+                            reject(new Error('Browser does not support video recording'));
                             return;
                         }
 
-                        const frameData = processedFrames[frameIndex];
-                        const frameImg = new Image();
+                        // Create video stream from canvas with error handling
+                        let stream;
+                        try {
+                            stream = canvas.captureStream(fps);
+                        } catch (streamError) {
+                            console.error('❌ Failed to create canvas stream:', streamError);
+                            reject(new Error(`Failed to create video stream: ${streamError.message}`));
+                            return;
+                        }
 
-                        frameImg.onload = () => {
-                            ctx.clearRect(0, 0, canvas.width, canvas.height);
-                            ctx.drawImage(frameImg, 0, 0);
+                        // Validate stream
+                        if (!stream || !stream.getVideoTracks || stream.getVideoTracks().length === 0) {
+                            reject(new Error('Failed to create valid video stream'));
+                            return;
+                        }
 
-                            frameIndex++;
-                            setTimeout(drawNextFrame, frameInterval);
+                        console.log(`📹 Video stream created with ${stream.getVideoTracks().length} video tracks`);
+
+                        // Create MediaRecorder with fallback options
+                        let mediaRecorder;
+                        const mimeTypes = [
+                            'video/webm;codecs=vp9',
+                            'video/webm;codecs=vp8',
+                            'video/webm',
+                            'video/mp4'
+                        ];
+
+                        for (const mimeType of mimeTypes) {
+                            if (MediaRecorder.isTypeSupported(mimeType)) {
+                                try {
+                                    mediaRecorder = new MediaRecorder(stream, { mimeType });
+                                    console.log(`📹 Using MediaRecorder with: ${mimeType}`);
+                                    break;
+                                } catch (recorderError) {
+                                    console.warn(`⚠️ Failed to create MediaRecorder with ${mimeType}:`, recorderError);
+                                    continue;
+                                }
+                            }
+                        }
+
+                        if (!mediaRecorder) {
+                            reject(new Error('MediaRecorder not supported with any available codec'));
+                            return;
+                        }
+
+                        const chunks = [];
+
+                        mediaRecorder.ondataavailable = (event) => {
+                            if (event.data && event.data.size > 0) {
+                                chunks.push(event.data);
+                            }
                         };
 
-                        frameImg.src = URL.createObjectURL(frameData.blob);
-                    };
+                        mediaRecorder.onstop = () => {
+                            try {
+                                console.log(`📹 Recording stopped, ${chunks.length} chunks collected`);
+                                if (chunks.length === 0) {
+                                    reject(new Error('No video data was recorded'));
+                                    return;
+                                }
 
-                    // Start drawing frames
-                    drawNextFrame();
+                                const videoBlob = new Blob(chunks, {
+                                    type: mediaRecorder.mimeType || 'video/webm'
+                                });
+
+                                console.log(`✅ Video reconstruction complete: ${(videoBlob.size / 1024 / 1024).toFixed(2)}MB`);
+                                resolve(videoBlob);
+                            } catch (stopError) {
+                                console.error('❌ Error during recording stop:', stopError);
+                                reject(new Error(`Video finalization failed: ${stopError.message}`));
+                            }
+                        };
+
+                        mediaRecorder.onerror = (event) => {
+                            console.error('❌ MediaRecorder error:', event);
+                            reject(new Error(`MediaRecorder error: ${event.error?.message || 'Unknown recording error'}`));
+                        };
+
+                        // Start recording
+                        try {
+                            mediaRecorder.start(100); // Record in 100ms chunks
+                            console.log('📹 Recording started');
+                        } catch (startError) {
+                            console.error('❌ Failed to start recording:', startError);
+                            reject(new Error(`Failed to start recording: ${startError.message}`));
+                            return;
+                        }
+
+                        // Draw frames to canvas
+                        let frameIndex = 0;
+                        const frameInterval = 1000 / fps;
+
+                        const drawNextFrame = () => {
+                            if (frameIndex >= processedFrames.length) {
+                                // Stop recording
+                                try {
+                                    console.log('🎬 All frames processed, stopping recording...');
+                                    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                                        mediaRecorder.stop();
+                                    }
+
+                                    // Stop all tracks to free resources - with null check
+                                    if (stream && stream.getTracks) {
+                                        stream.getTracks().forEach(track => {
+                                            if (track && track.stop) {
+                                                track.stop();
+                                            }
+                                        });
+                                    }
+                                } catch (stopError) {
+                                    console.error('❌ Error stopping recording:', stopError);
+                                    reject(new Error(`Failed to stop recording: ${stopError.message}`));
+                                }
+                                return;
+                            }
+
+                            const frameData = processedFrames[frameIndex];
+
+                            if (!frameData) {
+                                console.error(`❌ Frame data is null at index ${frameIndex}`);
+                                reject(new Error(`Frame data is null at index ${frameIndex}`));
+                                return;
+                            }
+
+                            const frameImg = new Image();
+
+                            frameImg.onload = () => {
+                                try {
+                                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                    ctx.drawImage(frameImg, 0, 0);
+                                    frameIndex++;
+                                    setTimeout(drawNextFrame, frameInterval);
+                                } catch (drawError) {
+                                    console.error('❌ Error drawing frame:', drawError);
+                                    reject(new Error(`Frame drawing failed: ${drawError.message}`));
+                                }
+                            };
+
+                            frameImg.onerror = (imgError) => {
+                                console.error('❌ Error loading frame image:', imgError);
+                                reject(new Error(`Frame image loading failed`));
+                            };
+
+                            // Handle different frame structures
+                            try {
+                                if (frameData.blob) {
+                                    frameImg.src = URL.createObjectURL(frameData.blob);
+                                } else if (frameData.data) {
+                                    const blob = new Blob([frameData.data], { type: 'image/png' });
+                                    frameImg.src = URL.createObjectURL(blob);
+                                } else {
+                                    throw new Error('Invalid frame data structure');
+                                }
+                            } catch (frameError) {
+                                console.error('❌ Error processing frame data:', frameError);
+                                reject(new Error(`Frame processing failed: ${frameError.message}`));
+                            }
+                        };
+
+                        // Start drawing frames
+                        drawNextFrame();
+
+                    } catch (setupError) {
+                        console.error('❌ Error setting up video recording:', setupError);
+                        reject(new Error(`Video recording setup failed: ${setupError.message}`));
+                    }
                 };
 
-                img.src = URL.createObjectURL(firstFrame.blob);
-            } else {
-                reject(new Error('No frames to reconstruct'));
+                img.onerror = (imgError) => {
+                    console.error('❌ Error loading first frame:', imgError);
+                    reject(new Error('Failed to load first frame for canvas setup'));
+                };
+
+                img.src = URL.createObjectURL(firstFrameBlob);
+
+            } catch (error) {
+                console.error('❌ Error in reconstructVideoFallback setup:', error);
+                reject(new Error(`Video reconstruction setup failed: ${error.message || error.toString()}`));
             }
         });
     }
 
     /**
-     * Process entire video workflow
+     * Process entire video workflow with optimizations
      */
     async processVideo(videoFile, styleData, options = {}) {
         const { fps = 5, onFrameProgress } = options;
@@ -1072,17 +1384,22 @@ class VideoProcessor {
             }
 
             console.log(`✅ Extracted ${frameNames.length} frames`);
-            console.log(`🔍 Debug: First few frame names:`, frameNames.slice(0, 3));
 
             if (this.onStageChange) this.onStageChange('applying_style');
 
-            // Process each frame
+            // Initialize performance tracking
+            this.performanceStats.totalStartTime = Date.now();
+
+            const processedFrameNames = [];
+
+            // Process each frame sequentially (simplified approach)
             console.log('🎨 Starting frame processing...');
             console.log(`🧠 Neural networks ready: ${this.isModelReady}`);
             console.log(`🎨 Style reference available: ${!!styleData.image}`);
 
-            const processedFrameNames = [];
             for (let i = 0; i < frameNames.length; i++) {
+                const frameStartTime = Date.now();
+
                 try {
                     console.log(`🖼️ Processing frame ${i + 1}/${frameNames.length}: ${frameNames[i]}`);
 
@@ -1090,7 +1407,10 @@ class VideoProcessor {
                     const processedName = await this.processFrame(frameName, styleData);
                     processedFrameNames.push(processedName);
 
-                    console.log(`✅ Frame ${i + 1} processed successfully: ${processedName}`);
+                    // Track performance
+                    const frameTime = (Date.now() - frameStartTime) / 1000;
+
+                    console.log(`✅ Frame ${i + 1} processed successfully in ${frameTime.toFixed(2)}s: ${processedName}`);
 
                     if (onFrameProgress) {
                         onFrameProgress({
@@ -1099,21 +1419,33 @@ class VideoProcessor {
                             progress: ((i + 1) / frameNames.length) * 100
                         });
                     }
+
+                    // Small break between frames to keep browser responsive
+                    if (i < frameNames.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
+
                 } catch (frameError) {
                     console.error(`❌ Failed to process frame ${i + 1}:`, frameError);
-                    console.error(`❌ Frame details:`, {
-                        frameName: frameNames[i],
-                        styleData: styleData.metadata,
-                        error: frameError.message || frameError.toString()
-                    });
                     throw new Error(`Failed to process frame ${i + 1}: ${frameError.message || frameError.toString()}`);
                 }
             }
 
-            console.log(`✅ Processed ${processedFrameNames.length} frames`);
+            console.log(`✅ Processed ${processedFrameNames.length} frames successfully`);
+
+            // Simple performance metrics
+            const totalProcessingTime = (Date.now() - this.performanceStats.totalStartTime) / 1000;
+            console.log(`📊 PERFORMANCE SUMMARY:`);
+            console.log(`   🎬 Total processing time: ${(totalProcessingTime / 60).toFixed(1)} minutes`);
+            console.log(`   🎯 Total frames processed: ${frameNames.length}`);
+            console.log(`   🧠 Memory efficiency: ${tf.memory().numTensors} tensors remaining`);
 
             // Reconstruct video
             console.log('🔄 Starting video reconstruction...');
+            console.log(`📊 Processed frames for reconstruction:`, processedFrameNames.length);
+            console.log(`📊 Sample processed frame:`, processedFrameNames[0]);
+            console.log(`📊 Using fallback reconstruction: ${this.useFallback}`);
+
             const outputBlob = await this.reconstructVideo(processedFrameNames, fps);
 
             if (!outputBlob) {
@@ -1126,7 +1458,8 @@ class VideoProcessor {
                 outputSize: `${(outputBlob.size / 1024 / 1024).toFixed(1)}MB`,
                 frameCount: frameNames.length,
                 fps: fps,
-                usedNeuralNetworks: this.isModelReady && styleData.image
+                usedNeuralNetworks: this.isModelReady && styleData.image,
+                processingMethod: 'sequential'
             });
 
             return {
