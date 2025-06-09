@@ -309,11 +309,38 @@ function AppProvider({ children }) {
         }, []),
 
         setError: useCallback((error) => {
-            const errorObj = error instanceof Error ?
-                { message: error.message, stack: error.stack } :
-                { message: String(error) };
+            // Handle null/undefined explicitly
+            if (error === null || error === undefined) {
+                console.log('🧹 Error cleared (null/undefined passed to setError)');
+                dispatch({ type: actionTypes.CLEAR_ERROR });
+                return;
+            }
 
-            console.error('App error set:', errorObj);
+            let errorObj;
+
+            if (error instanceof Error) {
+                errorObj = {
+                    message: error.message || 'An unknown error occurred',
+                    stack: error.stack
+                };
+            } else if (typeof error === 'string') {
+                errorObj = { message: error || 'An unknown error occurred' };
+            } else if (typeof error === 'object' && error !== null) {
+                errorObj = {
+                    message: error.message || error.toString() || 'An unknown error occurred'
+                };
+            } else {
+                errorObj = { message: 'An unknown error occurred' };
+            }
+
+            // Ensure message is never null, undefined, or empty
+            if (!errorObj.message || errorObj.message === 'null' || errorObj.message === 'undefined') {
+                errorObj.message = 'An unexpected error occurred during processing';
+            }
+
+            // Enhanced debugging with stack trace
+            console.error('❌ App error set:', errorObj);
+            console.trace('Error set from:');
             dispatch({ type: actionTypes.SET_ERROR, payload: errorObj });
         }, []),
 

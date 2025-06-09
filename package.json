@@ -9,7 +9,9 @@
         "test": "jest",
         "test:coverage": "jest --coverage",
         "lint": "eslint src/**/*.{js,jsx}",
-        "format": "prettier --write src/**/*.{js,jsx,css,html}"
+        "format": "prettier --write src/**/*.{js,jsx,css,html}",
+        "postinstall": "node scripts/download-models.js",
+        "download-models": "node scripts/download-models.js"
     },
     "dependencies": {
         "@ffmpeg/ffmpeg": "^0.12.10",

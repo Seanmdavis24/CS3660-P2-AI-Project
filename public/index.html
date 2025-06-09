@@ -10,34 +10,34 @@
         content="video style transfer, AI video processing, cartoon video, anime video, artistic video effects">
     <meta name="author" content="CartoonizeMe Team">
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Facebook - Disabled to prevent asset 404 errors -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://cartoonizeme.app/">
     <meta property="og:title" content="CartoonizeMe - AI Video Style Transfer">
     <meta property="og:description"
         content="Transform your videos into artistic animations using AI-powered neural style transfer">
-    <meta property="og:image" content="/assets/og-image.png">
+    <!-- <meta property="og:image" content="/assets/og-image.png"> -->
 
-    <!-- Twitter -->
+    <!-- Twitter - Disabled to prevent asset 404 errors -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://cartoonizeme.app/">
     <meta property="twitter:title" content="CartoonizeMe - AI Video Style Transfer">
     <meta property="twitter:description"
         content="Transform your videos into artistic animations using AI-powered neural style transfer">
-    <meta property="twitter:image" content="/assets/twitter-image.png">
+    <!-- <meta property="twitter:image" content="/assets/twitter-image.png"> -->
 
-    <!-- PWA Manifest (REQ-053, REQ-120) -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- PWA Manifest - Disabled to prevent 404 errors -->
+    <!-- <link rel="manifest" href="/manifest.json"> -->
 
-    <!-- Favicon -->
+    <!-- Favicon - Simplified to prevent 404 errors -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <!-- PWA icons disabled -->
+    <!-- <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"> -->
+    <!-- <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png"> -->
+    <!-- <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"> -->
 
     <!-- Theme color for mobile browsers -->
     <meta name="theme-color" content="#6366f1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="CartoonizeMe">
 
@@ -176,20 +176,20 @@
         </div>
     </noscript>
 
-    <!-- Register service worker for PWA functionality -->
+    <!-- Service worker registration - Disabled -->
     <script>
-        // Service worker registration for PWA (REQ-053)
-        if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((registration) => {
-                        console.log('SW registered: ', registration);
-                    })
-                    .catch((registrationError) => {
-                        console.log('SW registration failed: ', registrationError);
-                    });
-            });
-        }
+        // Service worker registration for PWA - Disabled to prevent 404 errors
+        // if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+        //     window.addEventListener('load', () => {
+        //         navigator.serviceWorker.register('/sw.js')
+        //             .then((registration) => {
+        //                 console.log('SW registered: ', registration);
+        //             })
+        //             .catch((registrationError) => {
+        //                 console.log('SW registration failed: ', registrationError);
+        //             });
+        //     });
+        // }
 
         // Basic feature detection for unsupported browsers (REQ-084)
         function checkBrowserSupport() {

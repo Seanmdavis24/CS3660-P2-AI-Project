@@ -1,5 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { InjectManifest } = require('workbox-webpack-plugin');
+// const { InjectManifest } = require('workbox-webpack-plugin'); // Disabled PWA functionality
 const path = require('path');
 
 module.exports = (env, argv) => {
@@ -28,6 +28,12 @@ module.exports = (env, argv) => {
                 '@styles': path.resolve(__dirname, 'src/styles'),
                 '@workers': path.resolve(__dirname, 'src/workers'),
             },
+            // Fix for FFmpeg dynamic imports
+            fallback: {
+                "fs": false,
+                "path": false,
+                "crypto": false,
+            }
         },
 
         // Module rules for different file types
@@ -64,6 +70,11 @@ module.exports = (env, argv) => {
                 {
                     test: /\.worker\.js$/,
                     use: { loader: 'worker-loader' },
+                },
+                // WebAssembly files for FFmpeg
+                {
+                    test: /\.wasm$/,
+                    type: 'asset/resource',
                 },
             ],
         },
@@ -128,14 +139,14 @@ module.exports = (env, argv) => {
                 } : false,
             }),
 
-            // Progressive Web App support (REQ-053)
-            ...(isProduction ? [
-                new InjectManifest({
-                    swSrc: './src/sw.js',
-                    swDest: 'sw.js',
-                    maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB for TensorFlow models
-                }),
-            ] : []),
+            // Progressive Web App support - Disabled to prevent service worker 404 errors
+            // ...(isProduction ? [
+            //     new InjectManifest({
+            //         swSrc: './src/sw.js',
+            //         swDest: 'sw.js',
+            //         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB for TensorFlow models
+            //     }),
+            // ] : []),
         ],
 
         // Development server configuration
@@ -152,18 +163,32 @@ module.exports = (env, argv) => {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
                 'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
-                // Content Security Policy headers (REQ-092) - Updated for better Web Worker support
-                'Content-Security-Policy': isProduction ?
-                    "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob: data:; connect-src 'self' https:; img-src 'self' data: blob:;" :
-                    "default-src 'self' 'unsafe-eval' 'unsafe-inline'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; worker-src 'self' blob: data:; connect-src 'self' ws: wss: http: https:; img-src 'self' data: blob:;"
+                // SharedArrayBuffer support for FFmpeg (required for multi-threading)
+                'Cross-Origin-Embedder-Policy': 'require-corp',
+                'Cross-Origin-Opener-Policy': 'same-origin',
+                // More permissive CSP for development to prevent TensorFlow.js issues
+                'Content-Security-Policy': isProduction ? [
+                    "default-src 'self'",
+                    "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://tfhub.dev https://storage.googleapis.com",
+                    "worker-src 'self' blob: https://unpkg.com",
+                    "connect-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://tfhub.dev https://storage.googleapis.com data: blob:",
+                    "img-src 'self' data: blob:",
+                    "media-src 'self' blob:",
+                    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                    "font-src 'self' data: https://fonts.gstatic.com",
+                    "object-src 'none'",
+                    "base-uri 'self'"
+                ].join('; ') :
+                    // Very permissive CSP for development to avoid issues
+                    "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; script-src 'self' 'unsafe-eval' 'unsafe-inline' blob: data: https:; worker-src 'self' blob: data: https:; connect-src 'self' ws: wss: http: https: blob: data:; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data: https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' data: https://fonts.googleapis.com; object-src 'none';"
             },
         },
 
         // Performance hints
         performance: {
             hints: isProduction ? 'warning' : false,
-            maxEntrypointSize: 512000, // 500KB
-            maxAssetSize: 512000, // 500KB
+            maxEntrypointSize: 1024000, // 1MB (increased for FFmpeg)
+            maxAssetSize: 1024000, // 1MB
         },
 
         // Source maps for debugging
@@ -178,6 +203,20 @@ module.exports = (env, argv) => {
         experiments: {
             // Enable WebAssembly support for ffmpeg.wasm
             asyncWebAssembly: true,
+            // Enable top-level await for FFmpeg initialization
+            topLevelAwait: true,
         },
+
+        // Ignore specific warnings and handle dynamic imports
+        ignoreWarnings: [
+            // Ignore FFmpeg dynamic import warnings
+            {
+                module: /@ffmpeg\/ffmpeg/,
+                message: /Critical dependency: the request of a dependency is an expression/,
+            },
+        ],
+
+        // Node.js polyfills (not needed for browser)
+        node: false,
     };
 }; 
