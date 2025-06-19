@@ -13,7 +13,9 @@ function ResultsViewer() {
         processingState,
         currentVideo,
         selectedStyle,
-        startNewVideo
+        startNewVideo,
+        setSelectedStyle,
+        setAppState
     } = useContext(AppContext);
 
     const [isPlaying, setIsPlaying] = useState({ original: false, processed: false });
@@ -568,8 +570,8 @@ function ResultsViewer() {
                         <button
                             className="btn glass text-white hover:bg-white/20 transition-all duration-300"
                             onClick={() => {
-                                // Reset to style selection with same video
-                                window.location.hash = '#style-selection';
+                                setSelectedStyle(null);
+                                setAppState('styleSelection');
                             }}
                         >
                             <span className="mr-2">🎨</span>
