@@ -22,6 +22,8 @@ function ResultsViewer() {
     const [showComparison, setShowComparison] = useState(true);
     const [videoErrors, setVideoErrors] = useState({ original: null, processed: null });
     const [videoUrls, setVideoUrls] = useState({ original: null, processed: null });
+    const [showProcessingDetails, setShowProcessingDetails] = useState(false);
+    const [showDebugInfo, setShowDebugInfo] = useState(false);
     const originalVideoRef = useRef(null);
     const processedVideoRef = useRef(null);
 
@@ -415,7 +417,7 @@ function ResultsViewer() {
                         {isProcessed && (
                             <div className="absolute top-4 right-4 glass rounded-full px-3 py-1">
                                 <span className="text-sm font-medium text-white">
-                                    {selectedStyle.name}
+                                    Custom Style
                                 </span>
                             </div>
                         )}
@@ -445,7 +447,7 @@ function ResultsViewer() {
                 </h2>
                 <p className="text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
                     Your video has been successfully transformed using
-                    <span className="text-gradient-primary font-bold"> {selectedStyle.name} style</span>
+                    <span className="text-gradient-primary font-bold"> Custom Style</span>
                 </p>
 
                 {/* Processing Summary */}
@@ -462,7 +464,7 @@ function ResultsViewer() {
                             <div className="text-sm text-white/70">Processing Time</div>
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-purple-400">{selectedStyle.name}</div>
+                            <div className="text-2xl font-bold text-purple-400">Custom Style</div>
                             <div className="text-sm text-white/70">Style Applied</div>
                         </div>
                         <div>
@@ -501,7 +503,7 @@ function ResultsViewer() {
             {showComparison ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {renderVideoPlayer('original', originalVideoRef, videoUrls.original, 'Original', currentVideo.size)}
-                    {renderVideoPlayer('processed', processedVideoRef, videoUrls.processed, selectedStyle.icon + ' ' + selectedStyle.name, result.blob.size, true)}
+                    {renderVideoPlayer('processed', processedVideoRef, videoUrls.processed, '🎨 Custom Style', result.blob.size, true)}
                 </div>
             ) : (
                 /* Focus View - Only Processed Video */
@@ -513,7 +515,7 @@ function ResultsViewer() {
                         </div>
                     </div>
 
-                    {renderVideoPlayer('processed', processedVideoRef, videoUrls.processed, '🎨 ' + selectedStyle.name + ' Style', result.blob.size, true)}
+                    {renderVideoPlayer('processed', processedVideoRef, videoUrls.processed, '🎨 Custom Style', result.blob.size, true)}
                 </div>
             )}
 
@@ -539,7 +541,7 @@ function ResultsViewer() {
                                 if (navigator.share) {
                                     navigator.share({
                                         title: 'Check out my AI-stylized video!',
-                                        text: `I transformed my video using ${selectedStyle.name} style with CartoonizeMe!`,
+                                        text: `I transformed my video using Custom Style with CartoonizeMe!`,
                                     });
                                 } else {
                                     // Fallback to copy link
@@ -577,150 +579,185 @@ function ResultsViewer() {
                             <span className="mr-2">🎨</span>
                             Try Different Style
                         </button>
+
+                        <button
+                            className="btn glass text-white hover:bg-white/20 transition-all duration-300"
+                            onClick={() => setShowProcessingDetails(!showProcessingDetails)}
+                        >
+                            <span className="mr-2">📊</span>
+                            {showProcessingDetails ? 'Hide' : 'Show'} Processing Details
+                        </button>
+
+                        <button
+                            className="btn glass text-white hover:bg-white/20 transition-all duration-300"
+                            onClick={() => setShowDebugInfo(!showDebugInfo)}
+                        >
+                            <span className="mr-2">🔧</span>
+                            {showDebugInfo ? 'Hide' : 'Show'} Debug Info
+                        </button>
                     </div>
                 </div>
             </div>
 
             {/* Processing Details */}
-            <div className="glass rounded-2xl p-6">
-                <h4 className="text-lg font-semibold text-white mb-4 text-center">Processing Details</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                    <div className="text-center">
-                        <div className="text-white/60 mb-1">Original Size</div>
-                        <div className="font-medium text-white">{formatFileSize(currentVideo.size)}</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-white/60 mb-1">Processed Size</div>
-                        <div className="font-medium text-white">{formatFileSize(result.blob.size)}</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-white/60 mb-1">Processing Time</div>
-                        <div className="font-medium text-white">{formatProcessingTime(result.processingTime)}</div>
-                    </div>
-                    <div className="text-center">
-                        <div className="text-white/60 mb-1">Frames</div>
-                        <div className="font-medium text-white">{result.frameCount}</div>
+            {showProcessingDetails && (
+                <div className="glass rounded-2xl p-6">
+                    <h4 className="text-lg font-semibold text-white mb-4 text-center">Processing Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div className="text-center p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors duration-300">
+                            <div className="text-white/60 mb-1">Original Size</div>
+                            <div className="font-medium text-white">{formatFileSize(currentVideo.size)}</div>
+                        </div>
+                        <div className="text-center p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors duration-300">
+                            <div className="text-white/60 mb-1">Processed Size</div>
+                            <div className="font-medium text-white">{formatFileSize(result.blob.size)}</div>
+                        </div>
+                        <div className="text-center p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors duration-300">
+                            <div className="text-white/60 mb-1">Processing Time</div>
+                            <div className="font-medium text-white">{formatProcessingTime(result.processingTime)}</div>
+                        </div>
+                        <div className="text-center p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors duration-300">
+                            <div className="text-white/60 mb-1">Frames</div>
+                            <div className="font-medium text-white">{result.frameCount}</div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Debug Panel */}
-            <div className="glass rounded-2xl p-6">
-                <h4 className="text-lg font-semibold text-white mb-4 text-center">🔧 Debug Information</h4>
-                <div className="space-y-4 text-sm">
-                    <div>
-                        <h5 className="font-medium text-white mb-2">Current Video Data:</h5>
-                        <div className="bg-black/30 rounded p-3 font-mono text-xs text-white/80">
-                            <div>• File exists: {currentVideo?.file ? '✅ Yes' : '❌ No'}</div>
-                            <div>• File type: {currentVideo?.file?.type || 'N/A'}</div>
-                            <div>• File size: {currentVideo?.file?.size || 'N/A'} bytes</div>
-                            <div>• File name: {currentVideo?.file?.name || 'N/A'}</div>
+            {showDebugInfo && (
+                <div className="glass rounded-2xl p-6">
+                    <h4 className="text-lg font-semibold text-white mb-4 text-center">🔧 Debug Information</h4>
+                    <div className="space-y-4 text-sm">
+                        <div>
+                            <h5 className="font-medium text-white mb-2 flex items-center space-x-2">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                                <span>Current Video Data</span>
+                            </h5>
+                            <div className="bg-black/30 rounded-xl p-4 font-mono text-xs text-white/80 border border-white/10">
+                                <div>• File exists: {currentVideo?.file ? '✅ Yes' : '❌ No'}</div>
+                                <div>• File type: {currentVideo?.file?.type || 'N/A'}</div>
+                                <div>• File size: {currentVideo?.file?.size || 'N/A'} bytes</div>
+                                <div>• File name: {currentVideo?.file?.name || 'N/A'}</div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <h5 className="font-medium text-white mb-2">Result Data:</h5>
-                        <div className="bg-black/30 rounded p-3 font-mono text-xs text-white/80">
-                            <div>• Result exists: {result ? '✅ Yes' : '❌ No'}</div>
-                            <div>• Has blob: {result?.blob ? '✅ Yes' : '❌ No'}</div>
-                            <div>• Blob type: {result?.blob?.type || 'N/A'}</div>
-                            <div>• Blob size: {result?.blob?.size || 'N/A'} bytes</div>
-                            <div>• Has URL: {result?.url ? '✅ Yes' : '❌ No'}</div>
-                            <div>• Frame count: {result?.frameCount || 'N/A'}</div>
+                        <div>
+                            <h5 className="font-medium text-white mb-2 flex items-center space-x-2">
+                                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                                <span>Result Data</span>
+                            </h5>
+                            <div className="bg-black/30 rounded-xl p-4 font-mono text-xs text-white/80 border border-white/10">
+                                <div>• Result exists: {result ? '✅ Yes' : '❌ No'}</div>
+                                <div>• Has blob: {result?.blob ? '✅ Yes' : '❌ No'}</div>
+                                <div>• Blob type: {result?.blob?.type || 'N/A'}</div>
+                                <div>• Blob size: {result?.blob?.size || 'N/A'} bytes</div>
+                                <div>• Has URL: {result?.url ? '✅ Yes' : '❌ No'}</div>
+                                <div>• Frame count: {result?.frameCount || 'N/A'}</div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <h5 className="font-medium text-white mb-2">Video URLs:</h5>
-                        <div className="bg-black/30 rounded p-3 font-mono text-xs text-white/80">
-                            <div>• Original URL: {videoUrls.original ? '✅ Created' : '❌ Missing'}</div>
-                            <div>• Processed URL: {videoUrls.processed ? '✅ Created' : '❌ Missing'}</div>
+                        <div>
+                            <h5 className="font-medium text-white mb-2 flex items-center space-x-2">
+                                <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                                <span>Video URLs</span>
+                            </h5>
+                            <div className="bg-black/30 rounded-xl p-4 font-mono text-xs text-white/80 border border-white/10">
+                                <div>• Original URL: {videoUrls.original ? '✅ Created' : '❌ Missing'}</div>
+                                <div>• Processed URL: {videoUrls.processed ? '✅ Created' : '❌ Missing'}</div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <h5 className="font-medium text-white mb-2">Video Errors:</h5>
-                        <div className="bg-black/30 rounded p-3 font-mono text-xs text-white/80">
-                            <div>• Original error: {videoErrors.original || '✅ None'}</div>
-                            <div>• Processed error: {videoErrors.processed || '✅ None'}</div>
+                        <div>
+                            <h5 className="font-medium text-white mb-2 flex items-center space-x-2">
+                                <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                                <span>Video Errors</span>
+                            </h5>
+                            <div className="bg-black/30 rounded-xl p-4 font-mono text-xs text-white/80 border border-white/10">
+                                <div>• Original error: {videoErrors.original || '✅ None'}</div>
+                                <div>• Processed error: {videoErrors.processed || '✅ None'}</div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <h5 className="font-medium text-white mb-2">Video Debug Actions:</h5>
-                        <div className="flex gap-2 flex-wrap">
-                            <button
-                                className="btn btn-sm bg-blue-600 text-white"
-                                onClick={() => {
-                                    console.log('🔍 MANUAL VIDEO DEBUG:');
-                                    [originalVideoRef, processedVideoRef].forEach((ref, index) => {
-                                        const videoType = index === 0 ? 'original' : 'processed';
-                                        const video = ref.current;
-                                        if (video) {
-                                            console.log(`\n📹 ${videoType.toUpperCase()} VIDEO STATE:`);
-                                            console.log('- src:', video.src);
-                                            console.log('- currentSrc:', video.currentSrc);
-                                            console.log('- readyState:', video.readyState);
-                                            console.log('- networkState:', video.networkState);
-                                            console.log('- duration:', video.duration);
-                                            console.log('- videoWidth:', video.videoWidth);
-                                            console.log('- videoHeight:', video.videoHeight);
-                                            console.log('- paused:', video.paused);
-                                            console.log('- ended:', video.ended);
-                                            console.log('- currentTime:', video.currentTime);
-                                            console.log('- controls:', video.controls);
-                                            console.log('- muted:', video.muted);
+                        <div>
+                            <h5 className="font-medium text-white mb-2 flex items-center space-x-2">
+                                <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                                <span>Video Debug Actions</span>
+                            </h5>
+                            <div className="flex gap-2 flex-wrap">
+                                <button
+                                    className="btn btn-sm bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300"
+                                    onClick={() => {
+                                        console.log('🔍 MANUAL VIDEO DEBUG:');
+                                        [originalVideoRef, processedVideoRef].forEach((ref, index) => {
+                                            const videoType = index === 0 ? 'original' : 'processed';
+                                            const video = ref.current;
+                                            if (video) {
+                                                console.log(`\n📹 ${videoType.toUpperCase()} VIDEO STATE:`);
+                                                console.log('- src:', video.src);
+                                                console.log('- currentSrc:', video.currentSrc);
+                                                console.log('- readyState:', video.readyState);
+                                                console.log('- networkState:', video.networkState);
+                                                console.log('- duration:', video.duration);
+                                                console.log('- videoWidth:', video.videoWidth);
+                                                console.log('- videoHeight:', video.videoHeight);
+                                                console.log('- paused:', video.paused);
+                                                console.log('- ended:', video.ended);
+                                                console.log('- currentTime:', video.currentTime);
+                                                console.log('- controls:', video.controls);
+                                                console.log('- muted:', video.muted);
 
-                                            // Try to force play
-                                            video.play().then(() => {
-                                                console.log(`✅ ${videoType} video started playing`);
-                                            }).catch(err => {
-                                                console.error(`❌ ${videoType} video play failed:`, err);
-                                            });
-                                        } else {
-                                            console.log(`❌ No ${videoType} video ref found`);
-                                        }
-                                    });
-                                }}
-                            >
-                                🔍 Debug Videos
-                            </button>
-                            <button
-                                className="btn btn-sm bg-green-600 text-white"
-                                onClick={() => {
-                                    [originalVideoRef, processedVideoRef].forEach((ref, index) => {
-                                        const videoType = index === 0 ? 'original' : 'processed';
-                                        const video = ref.current;
-                                        if (video) {
-                                            video.load();
-                                            console.log(`🔄 Reloaded ${videoType} video`);
-                                        }
-                                    });
-                                }}
-                            >
-                                🔄 Reload Videos
-                            </button>
-                            <button
-                                className="btn btn-sm bg-purple-600 text-white"
-                                onClick={() => {
-                                    [originalVideoRef, processedVideoRef].forEach((ref, index) => {
-                                        const videoType = index === 0 ? 'original' : 'processed';
-                                        const video = ref.current;
-                                        if (video) {
-                                            video.currentTime = 0;
-                                            video.play().catch(err => {
-                                                console.error(`❌ Force play ${videoType} failed:`, err);
-                                            });
-                                        }
-                                    });
-                                }}
-                            >
-                                ▶️ Force Play
-                            </button>
+                                                // Try to force play
+                                                video.play().then(() => {
+                                                    console.log(`✅ ${videoType} video started playing`);
+                                                }).catch(err => {
+                                                    console.error(`❌ ${videoType} video play failed:`, err);
+                                                });
+                                            } else {
+                                                console.log(`❌ No ${videoType} video ref found`);
+                                            }
+                                        });
+                                    }}
+                                >
+                                    🔍 Debug Videos
+                                </button>
+                                <button
+                                    className="btn btn-sm bg-green-600 text-white hover:bg-green-700 transition-colors duration-300"
+                                    onClick={() => {
+                                        [originalVideoRef, processedVideoRef].forEach((ref, index) => {
+                                            const videoType = index === 0 ? 'original' : 'processed';
+                                            const video = ref.current;
+                                            if (video) {
+                                                video.load();
+                                                console.log(`🔄 Reloaded ${videoType} video`);
+                                            }
+                                        });
+                                    }}
+                                >
+                                    🔄 Reload Videos
+                                </button>
+                                <button
+                                    className="btn btn-sm bg-purple-600 text-white hover:bg-purple-700 transition-colors duration-300"
+                                    onClick={() => {
+                                        [originalVideoRef, processedVideoRef].forEach((ref, index) => {
+                                            const videoType = index === 0 ? 'original' : 'processed';
+                                            const video = ref.current;
+                                            if (video) {
+                                                video.currentTime = 0;
+                                                video.play().catch(err => {
+                                                    console.error(`❌ Force play ${videoType} failed:`, err);
+                                                });
+                                            }
+                                        });
+                                    }}
+                                >
+                                    ▶️ Force Play
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

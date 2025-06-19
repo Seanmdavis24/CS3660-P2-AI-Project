@@ -418,9 +418,9 @@ function ProcessingEngine({ video, style }) {
         try {
             const baseStages = {
                 'initializing': { icon: '🔧', text: 'Initializing video processor...', color: 'text-blue-400' },
-                'ready': { icon: '🧠', text: `Loading ${style?.name || 'AI'} model...`, color: 'text-purple-400' },
+                'ready': { icon: '🧠', text: 'Loading Custom Style model...', color: 'text-purple-400' },
                 'extracting_frames': { icon: '🎬', text: 'Extracting video frames...', color: 'text-green-400' },
-                'applying_style': { icon: '🎨', text: `Applying ${style?.name || 'style'} to frames...`, color: 'text-orange-400' },
+                'applying_style': { icon: '🎨', text: 'Applying Custom Style to frames...', color: 'text-orange-400' },
                 'reconstructing_video': { icon: '🔄', text: 'Reconstructing stylized video...', color: 'text-cyan-400' },
             };
 
@@ -557,7 +557,7 @@ function ProcessingEngine({ video, style }) {
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-600">Style:</span>
-                            <span className="font-medium">{style?.metadata?.fileName || style?.name || 'Unknown'}</span>
+                            <span className="font-medium">Custom Style</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-600">File Size:</span>

@@ -172,7 +172,7 @@ function ProgressTracker() {
                     </div>
                     <div className="flex justify-between">
                         <span className="text-gray-600">Style:</span>
-                        <span className="font-medium">{selectedStyle?.name || 'N/A'}</span>
+                        <span className="font-medium">Custom Style</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-gray-600">File Size:</span>
