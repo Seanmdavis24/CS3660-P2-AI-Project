@@ -93,6 +93,10 @@ npx serve -s dist
 
 ### 3. Process Your Video
 - Click "Start Processing" to begin transformation
+- **Style Strength Control**: Adjust the slider to control the balance between original content and artistic style
+  - **Lower values (0-50%)**: Preserve more of your original video content
+  - **Higher values (50-100%)**: Apply more of the artistic style characteristics
+  - **Default (100%)**: Full artistic transformation
 - Watch real-time progress updates
 - Processing typically takes 1-2 minutes for 10-second videos
 
@@ -112,6 +116,7 @@ npx serve -s dist
 
 ### Key Technologies
 - **Neural Style Transfer**: AI-powered artistic transformation
+- **Style Ratio Control**: Interpolates between content and style features for customizable results
 - **WebGL 2.0**: GPU-accelerated processing
 - **Web Workers**: Background processing for UI responsiveness
 - **WebAssembly**: High-performance video processing

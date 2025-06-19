@@ -10,6 +10,49 @@
 import React, { useState, useContext, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
 
+// Custom slider styles
+const sliderStyles = `
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #a855f7;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .slider::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #a855f7;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .slider::-webkit-slider-track {
+    height: 12px;
+    border-radius: 6px;
+    background: transparent;
+  }
+  
+  .slider::-moz-range-track {
+    height: 12px;
+    border-radius: 6px;
+    background: transparent;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = sliderStyles;
+    document.head.appendChild(styleSheet);
+}
+
 function StyleSelector({ video }) {
     const { setSelectedStyle, setAppState } = useContext(AppContext);
     const [dragActive, setDragActive] = useState(false);
@@ -17,6 +60,7 @@ function StyleSelector({ video }) {
     const [imagePreview, setImagePreview] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState(null);
+    const [styleRatio, setStyleRatio] = useState(1.0);
     const fileInputRef = useRef(null);
 
     /**
@@ -135,8 +179,13 @@ function StyleSelector({ video }) {
      */
     const handleProceed = () => {
         if (uploadedImage) {
-            setSelectedStyle(uploadedImage);
-            console.log('🎨 Style selected for processing:', uploadedImage.metadata);
+            // Include the style ratio in the style data
+            const styleWithRatio = {
+                ...uploadedImage,
+                styleRatio: styleRatio
+            };
+            setSelectedStyle(styleWithRatio);
+            console.log('🎨 Style selected for processing:', uploadedImage.metadata, 'with ratio:', styleRatio);
         }
     };
 
@@ -328,6 +377,47 @@ function StyleSelector({ video }) {
                                             </span>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Style Strength Control */}
+                        <div className="p-6 bg-purple-900/20 border border-purple-500/30 rounded-xl">
+                            <h4 className="text-lg font-semibold text-white mb-4 text-center">
+                                🎨 Style Strength Control
+                            </h4>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium text-white/80">
+                                        Artistic Style Intensity
+                                    </label>
+                                    <span className="text-sm font-bold text-purple-400">
+                                        {Math.round(styleRatio * 100)}%
+                                    </span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.01"
+                                    value={styleRatio}
+                                    onChange={(e) => setStyleRatio(parseFloat(e.target.value))}
+                                    className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                                    style={{
+                                        background: `linear-gradient(to right, #374151 0%, #374151 ${styleRatio * 100}%, #a855f7 ${styleRatio * 100}%, #a855f7 100%)`
+                                    }}
+                                />
+                                <div className="flex justify-between text-xs text-white/60">
+                                    <span>More Original Content</span>
+                                    <span>More Artistic Style</span>
+                                </div>
+                                <div className="text-xs text-white/70 bg-black/20 rounded-lg p-3">
+                                    <p className="mb-2"><strong>How it works:</strong></p>
+                                    <ul className="space-y-1">
+                                        <li>• <strong>Lower values (0-50%):</strong> Preserve more of your original video content</li>
+                                        <li>• <strong>Higher values (50-100%):</strong> Apply more of the artistic style characteristics</li>
+                                        <li>• <strong>Default (100%):</strong> Full artistic transformation</li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>

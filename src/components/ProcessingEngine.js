@@ -191,6 +191,7 @@ function ProcessingEngine({ video, style }) {
 
             const result = await processor.processVideo(video.file, style, {
                 fps: fps,
+                styleRatio: style.styleRatio || 1.0,
                 onFrameProgress: (frameProgress) => {
                     // Map frame progress to 20-90% of total progress
                     const progressPercent = 20 + (frameProgress.progress * 0.7);
@@ -548,6 +549,7 @@ function ProcessingEngine({ video, style }) {
                 {/* Processing Stats */}
                 <div className="card">
                     <h4 className="text-lg font-semibold mb-4">Processing Information</h4>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="flex justify-between">
                             <span className="text-gray-600">Video:</span>
@@ -569,6 +571,14 @@ function ProcessingEngine({ video, style }) {
                                 {isDemoMode ? 'Demo Processing' : 'Full Processing'}
                             </span>
                         </div>
+                        {style?.styleRatio && (
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Style Strength:</span>
+                                <span className="font-medium text-purple-600">
+                                    {Math.round((style.styleRatio || 1.0) * 100)}%
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
