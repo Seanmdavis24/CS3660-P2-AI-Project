@@ -186,6 +186,14 @@ function ProgressTracker() {
                             {progress === 100 ? 'Complete' : 'Processing'}
                         </span>
                     </div>
+                    {selectedStyle?.styleRatio && (
+                        <div className="flex justify-between">
+                            <span className="text-gray-600">Style Strength:</span>
+                            <span className="font-medium text-purple-600">
+                                {Math.round((selectedStyle.styleRatio || 1.0) * 100)}%
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -12,7 +12,7 @@
  * @author CartoonizeMe Team
  */
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { AppContext } from './context/AppContext';
 import Header from './components/Header';
 import VideoUpload from './components/VideoUpload';
@@ -42,6 +42,9 @@ function App() {
     // Local state for performance recommendations
     const [performanceRecommendations, setPerformanceRecommendations] = useState([]);
 
+    // Ref to track if this is the initial load
+    const isInitialLoad = useRef(true);
+
     /**
      * Initialize application and check for performance recommendations
      */
@@ -56,6 +59,33 @@ function App() {
             console.log('📋 Performance recommendations:', recommendations);
         }
     }, []);
+
+    /**
+     * Scroll to top whenever app state changes (screen navigation)
+     */
+    useEffect(() => {
+        // Skip scroll on initial load
+        if (isInitialLoad.current) {
+            isInitialLoad.current = false;
+            return;
+        }
+
+        // Small delay to ensure DOM is ready
+        const scrollToTop = () => {
+            window.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: 'smooth'
+            });
+        };
+
+        // Use requestAnimationFrame for better timing
+        requestAnimationFrame(() => {
+            setTimeout(scrollToTop, 100);
+        });
+
+        console.log('📱 Scrolled to top for new screen:', appState);
+    }, [appState, currentVideo, selectedStyle]);
 
     /**
      * Determine which main component to render based on application state

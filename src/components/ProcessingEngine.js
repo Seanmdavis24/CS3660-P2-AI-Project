@@ -546,42 +546,6 @@ function ProcessingEngine({ video, style }) {
                     </div>
                 )}
 
-                {/* Processing Stats */}
-                <div className="card">
-                    <h4 className="text-lg font-semibold mb-4">Processing Information</h4>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Video:</span>
-                            <span className="font-medium">{video?.file?.name || 'Unknown'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Style:</span>
-                            <span className="font-medium">Custom Style</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">File Size:</span>
-                            <span className="font-medium">
-                                {video?.file?.size ? `${(video.file.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown'}
-                            </span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Mode:</span>
-                            <span className={`font-medium ${isDemoMode ? 'text-amber-600' : 'text-green-600'}`}>
-                                {isDemoMode ? 'Demo Processing' : 'Full Processing'}
-                            </span>
-                        </div>
-                        {style?.styleRatio && (
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Style Strength:</span>
-                                <span className="font-medium text-purple-600">
-                                    {Math.round((style.styleRatio || 1.0) * 100)}%
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
                 {/* Performance Tips */}
                 <div className={`card ${isDemoMode ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
                     <h4 className={`text-lg font-semibold mb-3 ${isDemoMode ? 'text-amber-800' : 'text-blue-800'}`}>
