@@ -191,6 +191,7 @@ function ProcessingEngine({ video, style }) {
 
             const result = await processor.processVideo(video.file, style, {
                 fps: fps,
+                styleRatio: style.styleRatio || 1.0,
                 onFrameProgress: (frameProgress) => {
                     // Map frame progress to 20-90% of total progress
                     const progressPercent = 20 + (frameProgress.progress * 0.7);
@@ -417,9 +418,9 @@ function ProcessingEngine({ video, style }) {
         try {
             const baseStages = {
                 'initializing': { icon: '🔧', text: 'Initializing video processor...', color: 'text-blue-400' },
-                'ready': { icon: '🧠', text: `Loading ${style?.name || 'AI'} model...`, color: 'text-purple-400' },
+                'ready': { icon: '🧠', text: 'Loading Custom Style model...', color: 'text-purple-400' },
                 'extracting_frames': { icon: '🎬', text: 'Extracting video frames...', color: 'text-green-400' },
-                'applying_style': { icon: '🎨', text: `Applying ${style?.name || 'style'} to frames...`, color: 'text-orange-400' },
+                'applying_style': { icon: '🎨', text: 'Applying Custom Style to frames...', color: 'text-orange-400' },
                 'reconstructing_video': { icon: '🔄', text: 'Reconstructing stylized video...', color: 'text-cyan-400' },
             };
 
@@ -544,33 +545,6 @@ function ProcessingEngine({ video, style }) {
                         )}
                     </div>
                 )}
-
-                {/* Processing Stats */}
-                <div className="card">
-                    <h4 className="text-lg font-semibold mb-4">Processing Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Video:</span>
-                            <span className="font-medium">{video?.file?.name || 'Unknown'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Style:</span>
-                            <span className="font-medium">{style?.metadata?.fileName || style?.name || 'Unknown'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">File Size:</span>
-                            <span className="font-medium">
-                                {video?.file?.size ? `${(video.file.size / 1024 / 1024).toFixed(1)} MB` : 'Unknown'}
-                            </span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Mode:</span>
-                            <span className={`font-medium ${isDemoMode ? 'text-amber-600' : 'text-green-600'}`}>
-                                {isDemoMode ? 'Demo Processing' : 'Full Processing'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
 
                 {/* Performance Tips */}
                 <div className={`card ${isDemoMode ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>

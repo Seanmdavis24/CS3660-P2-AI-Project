@@ -604,14 +604,7 @@ class DemoProcessor {
      * Get display name for style
      */
     getStyleName(styleId) {
-        const styleNames = {
-            cartoon: 'Cartoon',
-            anime: 'Anime',
-            oil_painting: 'Oil Painting',
-            watercolor: 'Watercolor',
-            sketch: 'Sketch'
-        };
-        return styleNames[styleId] || 'Unknown';
+        return 'Custom Style';
     }
 
     /**

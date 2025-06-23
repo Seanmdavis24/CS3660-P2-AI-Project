@@ -573,9 +573,9 @@ class VideoProcessor {
     /**
      * Apply neural style transfer to a frame using TensorFlow.js
      */
-    async processFrame(frameName, styleData) {
+    async processFrame(frameName, styleData, styleRatio = 1.0) {
         if (this.useFallback) {
-            return await this.processFrameFallback(frameName, styleData);
+            return await this.processFrameFallback(frameName, styleData, styleRatio);
         }
 
         try {
@@ -590,7 +590,7 @@ class VideoProcessor {
             let processedCanvas;
             if (this.isModelReady && this.styleModel && styleData.image) {
                 console.log(`🧠 Using neural style transfer for: ${styleData.metadata.fileName}`);
-                processedCanvas = await this.applyNeuralStyleTransfer(img, styleData);
+                processedCanvas = await this.applyNeuralStyleTransfer(img, styleData, styleRatio);
             } else {
                 console.log(`🎨 Using filter fallback for style: ${styleData.metadata.fileName}`);
                 processedCanvas = await this.applyStyleFilter(img, styleData);
@@ -615,7 +615,7 @@ class VideoProcessor {
     /**
      * Fallback frame processing for when FFmpeg isn't available
      */
-    async processFrameFallback(frameData, styleData) {
+    async processFrameFallback(frameData, styleData, styleRatio = 1.0) {
         try {
             // Create image from blob
             const img = await this.createImageFromBlob(frameData.blob);
@@ -624,7 +624,7 @@ class VideoProcessor {
             let processedCanvas;
             if (this.isModelReady && this.styleModel && styleData.image) {
                 console.log(`🧠 Using neural style transfer for: ${styleData.metadata.fileName}`);
-                processedCanvas = await this.applyNeuralStyleTransfer(img, styleData);
+                processedCanvas = await this.applyNeuralStyleTransfer(img, styleData, styleRatio);
             } else {
                 console.log(`🎨 Using filter fallback for style: ${styleData.metadata.fileName}`);
                 processedCanvas = await this.applyStyleFilter(img, styleData);
@@ -648,9 +648,9 @@ class VideoProcessor {
     /**
      * Apply neural style transfer using TensorFlow.js models
      */
-    async applyNeuralStyleTransfer(img, styleData) {
+    async applyNeuralStyleTransfer(img, styleData, styleRatio = 1.0) {
         try {
-            console.log(`🧠 Applying neural style transfer using: ${styleData.metadata.fileName}`);
+            console.log(`🧠 Applying neural style transfer using: ${styleData.metadata.fileName} with style ratio: ${styleRatio}`);
 
             // Check if we have both models loaded
             if (!this.isModelReady || !this.styleModel || !this.transformerModel) {
@@ -732,6 +732,30 @@ class VideoProcessor {
                     console.log('🔄 Calling style model predict...');
                     bottleneck = this.styleModel.predict(styleTensor);
                     console.log(`📊 Style model output shape: [${bottleneck.shape}]`);
+
+                    // Step 1.5: Apply style ratio interpolation if not 1.0
+                    if (styleRatio !== 1.0) {
+                        console.log(`🔄 Applying style ratio interpolation: ${styleRatio}`);
+
+                        // Extract identity (content) style features
+                        const identityBottleneck = this.styleModel.predict(contentTensor);
+                        console.log(`📊 Identity bottleneck shape: [${identityBottleneck.shape}]`);
+
+                        // Interpolate between style and identity bottlenecks
+                        const styleBottleneckScaled = bottleneck.mul(tf.scalar(styleRatio));
+                        const identityBottleneckScaled = identityBottleneck.mul(tf.scalar(1.0 - styleRatio));
+                        const interpolatedBottleneck = tf.add(styleBottleneckScaled, identityBottleneckScaled);
+
+                        // Clean up intermediate tensors
+                        bottleneck.dispose();
+                        identityBottleneck.dispose();
+                        styleBottleneckScaled.dispose();
+                        identityBottleneckScaled.dispose();
+
+                        // Use interpolated bottleneck
+                        bottleneck = interpolatedBottleneck;
+                        console.log(`📊 Interpolated bottleneck shape: [${bottleneck.shape}]`);
+                    }
 
                     console.log('🔄 Running transformer network to apply style transfer...');
                     console.log(`📊 Bottleneck shape: [${bottleneck.shape}]`);
@@ -1360,12 +1384,12 @@ class VideoProcessor {
      * Process entire video workflow with optimizations
      */
     async processVideo(videoFile, styleData, options = {}) {
-        const { fps = 5, onFrameProgress } = options;
+        const { fps = 5, onFrameProgress, styleRatio = 1.0 } = options;
 
         try {
             console.log(`🎬 Starting video processing: ${videoFile.name} (${(videoFile.size / 1024 / 1024).toFixed(1)}MB)`);
             console.log(`🎨 Using style: ${styleData.metadata.fileName}`);
-            console.log(`⚙️ Processing options:`, { fps, useFallback: this.useFallback, isModelReady: this.isModelReady });
+            console.log(`⚙️ Processing options:`, { fps, useFallback: this.useFallback, isModelReady: this.isModelReady, styleRatio });
 
             // Validate inputs
             if (!videoFile) {
@@ -1404,7 +1428,7 @@ class VideoProcessor {
                     console.log(`🖼️ Processing frame ${i + 1}/${frameNames.length}: ${frameNames[i]}`);
 
                     const frameName = this.useFallback ? frameNames[i] : frameNames[i];
-                    const processedName = await this.processFrame(frameName, styleData);
+                    const processedName = await this.processFrame(frameName, styleData, styleRatio);
                     processedFrameNames.push(processedName);
 
                     // Track performance
@@ -1459,7 +1483,8 @@ class VideoProcessor {
                 frameCount: frameNames.length,
                 fps: fps,
                 usedNeuralNetworks: this.isModelReady && styleData.image,
-                processingMethod: 'sequential'
+                processingMethod: 'sequential',
+                styleRatio: styleRatio
             });
 
             return {
@@ -1477,7 +1502,8 @@ class VideoProcessor {
                 styleName: styleData?.metadata?.fileName,
                 useFallback: this.useFallback,
                 isModelReady: this.isModelReady,
-                hasStyleReference: !!styleData.image
+                hasStyleReference: !!styleData.image,
+                styleRatio: styleRatio
             });
             throw new Error(`Video processing failed: ${errorMessage}`);
         }
